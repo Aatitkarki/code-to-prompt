@@ -93,7 +93,60 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         "public",
       ];
 
-      // Asset file extensions to exclude
+      // Programming file extensions to include
+      const programmingExtensions = [
+        // Web development
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".html",
+        ".css",
+        ".scss",
+        ".sass",
+        ".less",
+        // Backend
+        ".py",
+        ".java",
+        ".rb",
+        ".php",
+        ".go",
+        ".rs",
+        ".cs",
+        ".cpp",
+        ".c",
+        ".h",
+        // Mobile
+        ".swift",
+        ".kt",
+        ".dart",
+        ".m",
+        ".mm",
+        // Configuration & Data
+        ".json",
+        ".yaml",
+        ".yml",
+        ".xml",
+        ".toml",
+        ".ini",
+        ".env",
+        // Shell & Scripts
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".ps1",
+        ".bat",
+        ".cmd",
+        // Other
+        ".sql",
+        ".graphql",
+        ".proto",
+        ".vue",
+        ".svelte",
+        ".elm",
+      ];
+
+      // Asset file extensions to exclude (keep this for additional filtering)
       const assetExtensions = [
         ".png",
         ".jpg",
@@ -128,12 +181,17 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         try {
           const stat = await fs.promises.stat(fullPath);
 
-          // Skip files with asset extensions
-          if (
-            !stat.isDirectory() &&
-            assetExtensions.some((ext) => entryName.toLowerCase().endsWith(ext))
-          ) {
-            continue;
+          // For files, only include programming files and skip assets
+          if (!stat.isDirectory()) {
+            const lowerName = entryName.toLowerCase();
+            // Skip if it's an asset file
+            if (assetExtensions.some((ext) => lowerName.endsWith(ext))) {
+              continue;
+            }
+            // Skip if it's not a programming file
+            if (!programmingExtensions.some((ext) => lowerName.endsWith(ext))) {
+              continue;
+            }
           }
 
           const isChecked = this._fileSystemProvider.isChecked(fullPath);

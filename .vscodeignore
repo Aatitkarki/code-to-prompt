@@ -12,3 +12,6 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+
+# Explicitly include the wasm file
+!dist/tiktoken_bg.wasm
