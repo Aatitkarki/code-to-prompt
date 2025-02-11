@@ -17,6 +17,18 @@
     "onView:fileExplorerView"
   ],
   "main": "./dist/extension.js",
+  "publisher": "aatitkarki",
+  "author": {
+    "name": "Aatit Karki"
+  },
+  "license": "MIT",
+  "keywords": [
+    "code",
+    "prompt",
+    "ai",
+    "llm",
+    "code-to-prompt"
+  ],
   "contributes": {
     "commands": [
       {
