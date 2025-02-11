@@ -23,7 +23,7 @@
         "command": "fileExplorer.openWebview",
         "title": "Open File Explorer",
         "category": "Code To Prompt",
-        "icon": "assets/logo.svg"
+        "icon": "assets/logo.png"
       }
     ],
     "viewsContainers": {
@@ -31,7 +31,7 @@
         {
           "id": "fileExplorer",
           "title": "Code To Prompt Explorer",
-          "icon": "assets/logo.svg"
+          "icon": "assets/logo.png"
         }
       ]
     },
