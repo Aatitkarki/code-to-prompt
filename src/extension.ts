@@ -34,7 +34,20 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         }
       });
 
-      await this._refreshView();
+      // Get initial content
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders) {
+        webviewView.webview.html = this._getErrorContent("No folder is open");
+        return;
+      }
+
+      const rootPath = workspaceFolders[0].uri.fsPath;
+      const files = await this._scanDirectory(rootPath, false);
+      const checkedContents = this._fileSystemProvider.getCheckedFilesContent();
+      
+      // Set initial HTML content
+      webviewView.webview.html = this._getWebviewContent(files, checkedContents, rootPath);
+
     } catch (error) {
       console.error("Error in resolveWebviewView:", error);
       webviewView.webview.html = this._getErrorContent(
@@ -59,11 +72,18 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
       console.log("Scanning directory:", rootPath);
       const files = await this._scanDirectory(rootPath, false);
       const checkedContents = this._fileSystemProvider.getCheckedFilesContent();
-      this._view.webview.html = this._getWebviewContent(
-        files,
-        checkedContents,
-        rootPath
-      );
+
+      // If the view hasn't been initialized yet, set the full HTML
+      if (!this._view.webview.html) {
+        this._view.webview.html = this._getWebviewContent(files, checkedContents, rootPath);
+      } else {
+        // Otherwise just update the data via postMessage
+        this._view.webview.postMessage({
+          command: "updateFiles",
+          files,
+          checkedContents,
+        });
+      }
     } catch (error) {
       console.error("Error refreshing view:", error);
       this._view.webview.html = this._getErrorContent(
@@ -334,13 +354,27 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
           .folder { 
             color: var(--vscode-symbolIcon-folderForeground);
             margin-right: 4px;
+            display: flex;
+            align-items: center;
           }
           .folder:before {
             content: "📁";
             font-size: 12px;
           }
-          .item.checked .folder:before {
-            content: "📂";
+          .arrow {
+            margin-left: auto;
+            padding: 0 4px;
+            cursor: pointer;
+            opacity: 0.7;
+            font-size: 12px;
+            transition: transform 0.2s;
+            user-select: none;
+          }
+          .arrow:after {
+            content: "⌵";
+          }
+          .item.expanded .arrow {
+            transform: rotate(180deg);
           }
           .file { 
             color: var(--vscode-symbolIcon-fileForeground);
@@ -356,6 +390,10 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             margin-top: 1px;
             margin-bottom: 1px;
             padding-left: 3px;
+            display: none;
+          }
+          .children.expanded {
+            display: block;
           }
           .name {
             flex: 1;
@@ -442,24 +480,28 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
           let totalFiles = 0;
           let checkedFiles = 0;
           
-          // Initialize state storage for scroll position and separator
-          const state = vscode.getState() || { scrollPosition: 0, separator: '=====' };
+          // Initialize state storage for scroll position, separator and expanded states
+          const state = vscode.getState() || { 
+            scrollPosition: 0, 
+            separator: '=====',
+            expandedPaths: []  // Initialize as array since Set can't be serialized directly
+          };
           let separator = state.separator;
+          let expandedPaths = new Set(state.expandedPaths || []); // Ensure we handle null/undefined case
           
           // Update separator input initial value
           document.querySelector('.separator-input').value = separator;
           
-          function saveScrollPosition() {
-            const rootElement = document.getElementById('root');
-            state.scrollPosition = rootElement.scrollTop;
+          function saveState() {
+            state.expandedPaths = Array.from(expandedPaths);
+            state.scrollPosition = document.getElementById('root').scrollTop;
+            state.separator = separator;
             vscode.setState(state);
           }
 
-          function restoreScrollPosition() {
-            const rootElement = document.getElementById('root');
-            if (state.scrollPosition) {
-              rootElement.scrollTop = state.scrollPosition;
-            }
+          function saveScrollPosition() {
+            state.scrollPosition = document.getElementById('root').scrollTop;
+            saveState();
           }
 
           // Add scroll event listener to save position
@@ -486,6 +528,7 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             
             fileList.textContent = formattedContent;
             totalTokensEl.textContent = \`Total tokens: \${totalTokens}\`;
+            saveState(); // Save state after update
           }
 
           document.getElementById('copy-icon').onclick = () => {
@@ -538,6 +581,12 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
 
             const div = document.createElement('div');
             div.className = 'item' + (item.isChecked ? ' checked' : '');
+            if (item.isDirectory) {
+              // Set expanded state based on saved state
+              if (expandedPaths.has(item.path)) {
+                div.classList.add('expanded');
+              }
+            }
             div.dataset.path = item.path;
             
             const checkbox = document.createElement('span');
@@ -561,9 +610,51 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
               tokenCount.textContent = item.tokens + ' tokens';
               div.appendChild(tokenCount);
             }
+
+            // Add arrow for directories
+            if (item.isDirectory) {
+              const arrow = document.createElement('span');
+              arrow.className = 'arrow';
+              div.appendChild(arrow);
+
+              // Handle arrow click separately
+              arrow.onclick = (e) => {
+                e.stopPropagation();
+                
+                // Toggle folder expansion only
+                const isExpanded = div.classList.contains('expanded');
+                if (isExpanded) {
+                  div.classList.remove('expanded');
+                  expandedPaths.delete(item.path);
+                } else {
+                  div.classList.add('expanded');
+                  expandedPaths.add(item.path);
+                }
+                
+                // Save the expanded state
+                saveState();
+                
+                // Toggle children visibility
+                const nextSibling = div.nextElementSibling;
+                if (nextSibling && nextSibling.classList.contains('children')) {
+                  if (isExpanded) {
+                    nextSibling.classList.remove('expanded');
+                  } else {
+                    nextSibling.classList.add('expanded');
+                  }
+                }
+              };
+            }
             
+            // Handle checkbox click on the main div
             div.onclick = (e) => {
+              if (e.target.classList.contains('arrow')) {
+                return; // Don't handle if arrow was clicked
+              }
+              
               e.stopPropagation();
+              
+              // Handle checkbox state
               const isNowChecked = !div.classList.contains('checked');
               
               // Save scroll position before update
@@ -600,7 +691,8 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
               
               if (item.children && item.children.length > 0) {
                 const childrenDiv = document.createElement('div');
-                childrenDiv.className = 'children';
+                // Set expanded state based on parent's state
+                childrenDiv.className = 'children' + (expandedPaths.has(item.path) ? ' expanded' : '');
                 renderFiles(childrenDiv, item.children);
                 container.appendChild(childrenDiv);
               }
@@ -649,6 +741,44 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             vscode.setState(state);
             updateFileList();
           };
+
+          // Handle messages from the extension
+          window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+              case 'updateFiles':
+                // Update files while preserving expansion state
+                files = message.files;
+                checkedContents = message.checkedContents;
+                const root = document.getElementById('root');
+                if (!root) {
+                    console.error('Root element not found');
+                    return;
+                }
+                const oldScrollTop = root.scrollTop;
+                const savedExpandedPaths = new Set(expandedPaths); // Save current expanded state
+                root.innerHTML = '';
+                renderFiles(root, files);
+                expandedPaths = savedExpandedPaths; // Restore expanded state
+                updateFileList();
+                root.scrollTop = oldScrollTop;
+                saveState(); // Make sure state is saved after update
+                break;
+            }
+          });
+
+          // Ensure initial render happens
+          const root = document.getElementById('root');
+          if (root && (!root.children.length || root.children.length === 0)) {
+            renderFiles(root, files);
+            updateFileList();
+            // Restore scroll position after initial render
+            requestAnimationFrame(() => {
+              if (state.scrollPosition) {
+                root.scrollTop = state.scrollPosition;
+              }
+            });
+          }
         </script>
       </body>
     </html>`;
@@ -812,6 +942,9 @@ export function activate(context: vscode.ExtensionContext) {
       provider["_refreshView"]();
     }
   });
+
+  // Force open the view when extension activates
+  vscode.commands.executeCommand("workbench.view.extension.fileExplorer");
 
   context.subscriptions.push(registration, watcher, disposable);
 }
