@@ -1,0 +1,81 @@
+{
+  "name": "code-to-prompt",
+  "displayName": "Code To Prompt",
+  "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:fileExplorerView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fileExplorer.openWebview",
+        "title": "Open File Explorer",
+        "category": "Code To Prompt",
+        "icon": "assets/logo.svg"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fileExplorer",
+          "title": "Code To Prompt Explorer",
+          "icon": "assets/logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "fileExplorer": [
+        {
+          "type": "webview",
+          "id": "fileExplorerView",
+          "name": "Files and Folders"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "fileExplorer.openWebview",
+          "when": "view == fileExplorerView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.97.0",
+    "@typescript-eslint/eslint-plugin": "^8.22.0",
+    "@typescript-eslint/parser": "^8.22.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.19.0",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.7.3",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "tiktoken": "^1.0.20"
+  }
+}
