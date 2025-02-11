@@ -51,7 +51,7 @@ Transform your code into AI-ready prompts! This VS Code extension helps you easi
 
 ## Contributing
 
-Found a bug or have a feature request? Please open an issue on our [GitHub repository](https://github.com/yourusername/code-to-prompt).
+Found a bug or have a feature request? Please open an issue on our [GitHub repository](https://github.com/aatitkarki/code-to-prompt).
 
 ## License
 
