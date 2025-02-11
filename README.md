@@ -2,7 +2,7 @@
 
 Transform your code into AI-ready prompts! This VS Code extension helps you easily convert your codebase into structured prompts for Large Language Models (LLMs).
 
-![Code To Prompt](assets/logo.png)
+<img src="assets/logo.png" width="200" alt="Code To Prompt">
 
 ## Features
 
