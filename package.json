@@ -3,6 +3,7 @@
   "displayName": "Code To Prompt",
   "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
   "version": "0.0.1",
+  "icon": "assets/logo.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/aatitkarki/code-to-prompt.git"
