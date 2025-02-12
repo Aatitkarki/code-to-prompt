@@ -428,13 +428,39 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
           let totalFiles = 0;
           let checkedFiles = 0;
           
-          // Initialize state storage for scroll position and separator
-          const state = vscode.getState() || { scrollPosition: 0, separator: '=====' };
+          // Initialize state storage for scroll position, separator, and folder states
+          const state = vscode.getState() || { 
+            scrollPosition: 0, 
+            separator: '=====',
+            folderStates: {} // Changed from new Map() to plain object
+          };
+
+          // Ensure folderStates exists
+          if (!state.folderStates) {
+            state.folderStates = {};
+          }
+          
           let separator = state.separator;
           
           // Update separator input initial value
           document.querySelector('.separator-input').value = separator;
-          
+
+          function saveFolderState(path, isCollapsed) {
+            if (!state.folderStates) {
+              state.folderStates = {};
+            }
+            state.folderStates[path] = isCollapsed;
+            vscode.setState(state);
+          }
+
+          function getFolderState(path) {
+            if (!state.folderStates) {
+              return true; // Default to collapsed
+            }
+            // If the state doesn't exist for this path, return true (collapsed)
+            return state.folderStates[path] !== false;
+          }
+
           function saveScrollPosition() {
             const rootElement = document.getElementById('root');
             state.scrollPosition = rootElement.scrollTop;
@@ -521,7 +547,7 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             if (item.isChecked) {
               checkedFiles++;
             }
-
+          
             const div = document.createElement('div');
             div.className = 'item' + (item.isChecked ? ' checked' : '');
             div.dataset.path = item.path;
@@ -539,23 +565,25 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             div.appendChild(checkbox);
             div.appendChild(icon);
             div.appendChild(name);
-
+          
             // Add collapse/expand icon for directories
             if (item.isDirectory && item.children && item.children.length > 0) {
               const collapseIcon = document.createElement('span');
               collapseIcon.className = 'collapse-icon';
-              collapseIcon.textContent = '↑'; // Default to expanded
+              const isCollapsed = getFolderState(item.path);
+              collapseIcon.textContent = isCollapsed ? '↓' : '↑';
               collapseIcon.onclick = (e) => {
                 e.stopPropagation();
                 const nextSibling = div.nextElementSibling;
                 if (nextSibling && nextSibling.classList.contains('children')) {
                   const isCollapsed = nextSibling.classList.toggle('collapsed');
                   collapseIcon.textContent = isCollapsed ? '↓' : '↑';
+                  saveFolderState(item.path, isCollapsed);
                 }
               };
               div.appendChild(collapseIcon);
             }
-
+          
             // Add token count for files
             if (!item.isDirectory && item.tokens > 0) {
               const tokenCount = document.createElement('span');
@@ -583,7 +611,7 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
               if (nextSibling && nextSibling.classList.contains('children')) {
                 updateChildrenState(nextSibling, isNowChecked);
               }
-
+          
               vscode.postMessage({
                 command: 'toggleItem',
                 path: item.path
@@ -594,35 +622,44 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             
             return div;
           }
-
+          
           function renderFiles(container, items) {
+            // Clear the container first
+            container.innerHTML = '';
+            
             items.forEach(item => {
               const itemEl = createItem(item);
               container.appendChild(itemEl);
               
               if (item.children && item.children.length > 0) {
                 const childrenDiv = document.createElement('div');
-                childrenDiv.className = 'children';
+                childrenDiv.className = 'children' + (getFolderState(item.path) ? ' collapsed' : '');
                 renderFiles(childrenDiv, item.children);
                 container.appendChild(childrenDiv);
               }
             });
           }
 
-          renderFiles(document.getElementById('root'), files);
-          updateFileList();
+          // Initialize and render the file tree
+          const rootElement = document.getElementById('root');
+          if (files && files.length > 0) {
+            renderFiles(rootElement, files);
+            updateFileList();
 
-          // Restore scroll position after rendering
-          requestAnimationFrame(() => {
-            restoreScrollPosition();
-          });
+            // Restore scroll position after rendering
+            requestAnimationFrame(() => {
+              restoreScrollPosition();
+            });
 
-          // Notify extension of initial counts
-          vscode.postMessage({
-            command: 'updateCounts',
-            total: totalFiles,
-            checked: checkedFiles
-          });
+            // Notify extension of initial counts
+            vscode.postMessage({
+              command: 'updateCounts',
+              total: totalFiles,
+              checked: checkedFiles
+            });
+          } else {
+            rootElement.innerHTML = '<div style="padding: 8px;">No files available</div>';
+          }
 
           // Add settings icon click handler
           const settingsIcon = document.querySelector('.settings-icon');
