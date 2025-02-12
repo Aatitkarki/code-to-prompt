@@ -1,14 +1,72 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import { encoding_for_model } from "tiktoken";
+
+// Cache for file stats and tokens to avoid redundant calculations
+class FileCache {
+  private statsCache = new Map<string, { isDirectory: boolean; mtime: Date }>();
+  private tokenCache = new Map<
+    string,
+    { tokens: number; content: string; mtime: Date }
+  >();
+  private encoder = encoding_for_model("gpt-4");
+
+  async getStats(path: string) {
+    const cached = this.statsCache.get(path);
+    try {
+      const stat = await fs.stat(path);
+      const current = { isDirectory: stat.isDirectory(), mtime: stat.mtime };
+
+      if (!cached || cached.mtime < current.mtime) {
+        this.statsCache.set(path, current);
+        return current;
+      }
+      return cached;
+    } catch (error) {
+      console.error(`Error getting stats for ${path}:`, error);
+      return null;
+    }
+  }
+
+  async getFileContent(path: string) {
+    const cached = this.tokenCache.get(path);
+    try {
+      const stat = await fs.stat(path);
+      if (cached && cached.mtime >= stat.mtime) {
+        return cached;
+      }
+
+      const content = await fs.readFile(path, "utf8");
+      const tokens = this.encoder.encode(content).length;
+      const result = { content, tokens, mtime: stat.mtime };
+      this.tokenCache.set(path, result);
+      return result;
+    } catch (error) {
+      console.error(`Error reading file ${path}:`, error);
+      return {
+        content: `Error reading file content`,
+        tokens: 0,
+        mtime: new Date(),
+      };
+    }
+  }
+
+  clear() {
+    this.statsCache.clear();
+    this.tokenCache.clear();
+  }
+}
 
 class FileExplorerViewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _fileSystemProvider: FileSystemProvider;
+  private _debounceTimer?: NodeJS.Timeout;
+  private _cache: FileCache;
 
   constructor(private readonly _extensionUri: vscode.Uri) {
     this._fileSystemProvider = new FileSystemProvider();
+    this._cache = new FileCache();
   }
 
   public async resolveWebviewView(
@@ -43,10 +101,15 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _refreshView() {
-    if (!this._view) {
-      return;
+  private debounceRefresh(delay = 300) {
+    if (this._debounceTimer) {
+      clearTimeout(this._debounceTimer);
     }
+    this._debounceTimer = setTimeout(() => this._refreshView(), delay);
+  }
+
+  private async _refreshView() {
+    if (!this._view) return;
 
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
@@ -58,7 +121,8 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
       const rootPath = workspaceFolders[0].uri.fsPath;
       console.log("Scanning directory:", rootPath);
       const files = await this._scanDirectory(rootPath, false);
-      const checkedContents = this._fileSystemProvider.getCheckedFilesContent();
+      const checkedContents =
+        await this._fileSystemProvider.getCheckedFilesContent(this._cache);
       this._view.webview.html = this._getWebviewContent(
         files,
         checkedContents,
@@ -77,11 +141,11 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
     parentIsChecked: boolean = false
   ): Promise<any[]> {
     try {
+      const entries = await fs.readdir(dirPath);
       const result = [];
-      const entries = await fs.promises.readdir(dirPath);
 
-      // Asset-related folders to exclude
-      const excludedFolders = [
+      // Move these to class constants
+      const excludedFolders = new Set([
         "node_modules",
         "dist",
         "out",
@@ -91,11 +155,9 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         "icons",
         "media",
         "public",
-      ];
+      ]);
 
-      // Programming file extensions to include
-      const programmingExtensions = [
-        // Web development
+      const programmingExtensions = new Set([
         ".js",
         ".ts",
         ".jsx",
@@ -105,7 +167,6 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         ".scss",
         ".sass",
         ".less",
-        // Backend
         ".py",
         ".java",
         ".rb",
@@ -116,13 +177,11 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         ".cpp",
         ".c",
         ".h",
-        // Mobile
         ".swift",
         ".kt",
         ".dart",
         ".m",
         ".mm",
-        // Configuration & Data
         ".json",
         ".yaml",
         ".yml",
@@ -130,68 +189,60 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         ".toml",
         ".ini",
         ".env",
-        // Shell & Scripts
         ".sh",
         ".bash",
         ".zsh",
         ".ps1",
         ".bat",
         ".cmd",
-        // Other
         ".sql",
         ".graphql",
         ".proto",
         ".vue",
         ".svelte",
         ".elm",
-      ];
+      ]);
 
-      for (const entryName of entries) {
-        if (
-          entryName.startsWith(".") ||
-          excludedFolders.includes(entryName.toLowerCase())
-        ) {
-          continue;
-        }
-
-        const fullPath = path.join(dirPath, entryName);
-        try {
-          const stat = await fs.promises.stat(fullPath);
+      const processPromises = entries
+        .filter(
+          (entryName) =>
+            !entryName.startsWith(".") &&
+            !excludedFolders.has(entryName.toLowerCase())
+        )
+        .map(async (entryName) => {
+          const fullPath = path.join(dirPath, entryName);
+          const stats = await this._cache.getStats(fullPath);
+          if (!stats) return null;
 
           // For files, only include programming files
-          if (!stat.isDirectory()) {
-            const lowerName = entryName.toLowerCase();
-            // Skip if it's not a programming file
-            if (!programmingExtensions.some((ext) => lowerName.endsWith(ext))) {
-              continue;
-            }
+          if (!stats.isDirectory) {
+            const ext = path.extname(entryName).toLowerCase();
+            if (!programmingExtensions.has(ext)) return null;
           }
 
           const isChecked = this._fileSystemProvider.isChecked(fullPath);
           const fileData: any = {
             name: entryName,
             path: fullPath,
-            isDirectory: stat.isDirectory(),
-            isChecked: isChecked,
+            isDirectory: stats.isDirectory,
+            isChecked,
           };
 
-          if (!stat.isDirectory()) {
-            const { tokens } =
-              this._fileSystemProvider.getFileContent(fullPath);
+          if (!stats.isDirectory) {
+            const { tokens } = await this._cache.getFileContent(fullPath);
             fileData.tokens = tokens;
+          } else {
+            fileData.children = await this._scanDirectory(fullPath, isChecked);
           }
 
-          fileData.children = stat.isDirectory()
-            ? await this._scanDirectory(fullPath, isChecked)
-            : undefined;
+          return fileData;
+        });
 
-          result.push(fileData);
-        } catch (error) {
-          console.warn(`Skipping ${entryName} due to error:`, error);
-        }
-      }
+      const items = (await Promise.all(processPromises)).filter(
+        (item) => item !== null
+      );
 
-      return result.sort((a, b) => {
+      return items.sort((a, b) => {
         if (a.isDirectory === b.isDirectory) {
           return a.name.localeCompare(b.name);
         }
@@ -534,10 +585,18 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
           function updateChildrenState(container, checked) {
             const items = container.querySelectorAll('.item');
             items.forEach(item => {
-              if (checked) {
+              if (checked && !item.classList.contains('checked')) {
                 item.classList.add('checked');
-              } else {
+                vscode.postMessage({
+                  command: 'toggleItem',
+                  path: item.dataset.path
+                });
+              } else if (!checked && item.classList.contains('checked')) {
                 item.classList.remove('checked');
+                vscode.postMessage({
+                  command: 'toggleItem',
+                  path: item.dataset.path
+                });
               }
             });
           }
@@ -612,12 +671,16 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
                 updateChildrenState(nextSibling, isNowChecked);
               }
           
+              // Send message for this item last to ensure children are processed first
               vscode.postMessage({
                 command: 'toggleItem',
                 path: item.path
               });
               
-              updateFileList();
+              // Update file list after all toggles are complete
+              setTimeout(() => {
+                updateFileList();
+              }, 100);
             };
             
             return div;
@@ -707,78 +770,13 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
 
 class FileSystemProvider {
   private checkedItems = new Set<string>();
-  private encoder = encoding_for_model("gpt-4");
 
   toggleChecked(path: string) {
     const isChecked = this.checkedItems.has(path);
-    try {
-      if (isChecked) {
-        // Uncheck this item and all children
-        this.checkedItems.delete(path);
-        const stat = fs.statSync(path);
-        if (stat.isDirectory()) {
-          const entries = fs.readdirSync(path);
-          for (const entry of entries) {
-            const fullPath = path.endsWith("/")
-              ? path + entry
-              : path + "/" + entry;
-            this.checkedItems.delete(fullPath);
-            this.setChildrenState(fullPath, false);
-          }
-        }
-      } else {
-        // Check this item and all children
-        this.checkedItems.add(path);
-        const stat = fs.statSync(path);
-        if (stat.isDirectory()) {
-          const entries = fs.readdirSync(path);
-          for (const entry of entries) {
-            const fullPath = path.endsWith("/")
-              ? path + entry
-              : path + "/" + entry;
-            if (
-              !entry.startsWith(".") &&
-              entry !== "node_modules" &&
-              entry !== "dist" &&
-              entry !== "out"
-            ) {
-              this.checkedItems.add(fullPath);
-              this.setChildrenState(fullPath, true);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Error toggling path ${path}:`, error);
-    }
-  }
-
-  private setChildrenState(path: string, state: boolean) {
-    try {
-      const stat = fs.statSync(path);
-      if (stat.isDirectory()) {
-        const entries = fs.readdirSync(path);
-        for (const entry of entries) {
-          if (
-            !entry.startsWith(".") &&
-            entry !== "node_modules" &&
-            entry !== "dist" &&
-            entry !== "out"
-          ) {
-            const fullPath = path.endsWith("/")
-              ? path + entry
-              : path + "/" + entry;
-            if (state) {
-              this.checkedItems.add(fullPath);
-            } else {
-              this.checkedItems.delete(fullPath);
-            }
-            this.setChildrenState(fullPath, state);
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Error setting children state for ${path}:`, error);
+    if (isChecked) {
+      this.checkedItems.delete(path);
+    } else {
+      this.checkedItems.add(path);
     }
   }
 
@@ -786,40 +784,29 @@ class FileSystemProvider {
     return this.checkedItems.has(path);
   }
 
-  getFileContent(path: string): { content: string; tokens: number } {
-    try {
-      const content = fs.readFileSync(path, "utf8");
-      const tokens = this.encoder.encode(content).length;
-      return { content, tokens };
-    } catch (error) {
-      console.error(`Error reading file ${path}:`, error);
-      return { content: `Error reading file content`, tokens: 0 };
-    }
-  }
-
-  getCheckedFilesContent(): Array<{
-    path: string;
-    content: string;
-    tokens: number;
-  }> {
-    const contents = [];
-    let totalTokens = 0;
-    for (const path of this.checkedItems) {
+  async getCheckedFilesContent(cache: FileCache): Promise<
+    Array<{
+      path: string;
+      content: string;
+      tokens: number;
+    }>
+  > {
+    const contentPromises = Array.from(this.checkedItems).map(async (path) => {
       try {
-        const stat = fs.statSync(path);
-        if (!stat.isDirectory()) {
-          const { content, tokens } = this.getFileContent(path);
-          contents.push({
-            path,
-            content,
-            tokens,
-          });
-          totalTokens += tokens;
+        const stats = await cache.getStats(path);
+        if (stats && !stats.isDirectory) {
+          const { content, tokens } = await cache.getFileContent(path);
+          return { path, content, tokens };
         }
       } catch (error) {
         console.error(`Error processing file ${path}:`, error);
       }
-    }
+      return null;
+    });
+
+    const contents = (await Promise.all(contentPromises)).filter(
+      (item) => item !== null
+    );
     return contents;
   }
 }
@@ -827,32 +814,24 @@ class FileSystemProvider {
 export function activate(context: vscode.ExtensionContext) {
   const provider = new FileExplorerViewProvider(context.extensionUri);
 
-  // Register the WebviewViewProvider
+  // Register with retained context for better performance
   const registration = vscode.window.registerWebviewViewProvider(
     "fileExplorerView",
     provider,
-    {
-      webviewOptions: { retainContextWhenHidden: true },
-    }
+    { webviewOptions: { retainContextWhenHidden: true } }
   );
 
-  // Register the command handler
-  const disposable = vscode.commands.registerCommand(
-    "fileExplorer.openWebview",
-    () => {
-      // Show the view
-      vscode.commands.executeCommand("workbench.view.extension.fileExplorer");
-    }
+  const watcher = vscode.workspace.createFileSystemWatcher(
+    "**/*",
+    false,
+    true,
+    true
   );
+  watcher.onDidChange(() => provider["debounceRefresh"]());
+  watcher.onDidCreate(() => provider["debounceRefresh"]());
+  watcher.onDidDelete(() => provider["debounceRefresh"]());
 
-  // Watch for workspace folder changes
-  const watcher = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-    if (provider["_view"]) {
-      provider["_refreshView"]();
-    }
-  });
-
-  context.subscriptions.push(registration, watcher, disposable);
+  context.subscriptions.push(registration, watcher);
 }
 
 export function deactivate() {}
