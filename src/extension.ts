@@ -89,6 +89,10 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             this._fileSystemProvider.toggleChecked(message.path);
             await this._refreshView();
             break;
+          case "toggleItems":
+            this._fileSystemProvider.batchToggleChecked(message.paths);
+            await this._refreshView();
+            break;
         }
       });
 
@@ -540,16 +544,38 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
               return;
             }
             
+            // Use DocumentFragment for batch DOM updates
+            const fragment = document.createDocumentFragment();
             let totalTokens = 0;
-            const formattedContent = checkedContents.map(file => {
+            
+            checkedContents.forEach(file => {
               const relativePath = file.path.replace(workspacePath + '/', '');
               totalTokens += file.tokens;
-              return \`\${separator}\\n// \${relativePath} \\n\${separator}\\n\${file.content}\\n\${separator}\`;
-            }).join('\\n\\n');
+              const content = \`\${separator}\\n// \${relativePath} \\n\${separator}\\n\${file.content}\\n\${separator}\\n\\n\`;
+              fragment.appendChild(document.createTextNode(content));
+            });
             
-            fileList.textContent = formattedContent;
+            // Single DOM update
+            fileList.textContent = '';
+            fileList.appendChild(fragment);
             totalTokensEl.textContent = \`Total tokens: \${totalTokens}\`;
           }
+
+          // Debounce function
+          function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+              const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+              };
+              clearTimeout(timeout);
+              timeout = setTimeout(later, wait);
+            };
+          }
+
+          // Debounced version of updateFileList
+          const debouncedUpdateFileList = debounce(updateFileList, 100);
 
           document.getElementById('copy-icon').onclick = () => {
             if (checkedContents.length === 0) {
@@ -583,22 +609,25 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
           }
 
           function updateChildrenState(container, checked) {
-            const items = container.querySelectorAll('.item');
-            items.forEach(item => {
-              if (checked && !item.classList.contains('checked')) {
-                item.classList.add('checked');
-                vscode.postMessage({
-                  command: 'toggleItem',
-                  path: item.dataset.path
-                });
-              } else if (!checked && item.classList.contains('checked')) {
-                item.classList.remove('checked');
-                vscode.postMessage({
-                  command: 'toggleItem',
-                  path: item.dataset.path
-                });
+            // Use more efficient querySelectorAll with specific class
+            const items = container.getElementsByClassName('item');
+            const paths = [];
+            
+            Array.from(items).forEach(item => {
+              const shouldUpdate = checked !== item.classList.contains('checked');
+              if (shouldUpdate) {
+                item.classList.toggle('checked');
+                paths.push(item.dataset.path);
               }
             });
+            
+            // Batch update messages
+            if (paths.length > 0) {
+              vscode.postMessage({
+                command: 'toggleItems',
+                paths: paths
+              });
+            }
           }
 
           function createItem(item) {
@@ -659,11 +688,7 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
               saveScrollPosition();
               
               // Toggle this item's state
-              if (isNowChecked) {
-                div.classList.add('checked');
-              } else {
-                div.classList.remove('checked');
-              }
+              div.classList.toggle('checked');
               
               // Update children if this is a directory
               const nextSibling = div.nextElementSibling;
@@ -671,16 +696,14 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
                 updateChildrenState(nextSibling, isNowChecked);
               }
           
-              // Send message for this item last to ensure children are processed first
+              // Send message for this item
               vscode.postMessage({
                 command: 'toggleItem',
                 path: item.path
               });
               
-              // Update file list after all toggles are complete
-              setTimeout(() => {
-                updateFileList();
-              }, 100);
+              // Use debounced update
+              debouncedUpdateFileList();
             };
             
             return div;
@@ -770,14 +793,32 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
 
 class FileSystemProvider {
   private checkedItems = new Set<string>();
+  private batchUpdatesInProgress = false;
+  private pendingUpdates = new Set<string>();
 
   toggleChecked(path: string) {
-    const isChecked = this.checkedItems.has(path);
-    if (isChecked) {
+    if (this.checkedItems.has(path)) {
       this.checkedItems.delete(path);
     } else {
       this.checkedItems.add(path);
     }
+  }
+
+  // New method for batch updates
+  batchToggleChecked(paths: string[]) {
+    this.batchUpdatesInProgress = true;
+    paths.forEach((path) => {
+      this.pendingUpdates.add(path);
+    });
+
+    // Process batch updates
+    setTimeout(() => {
+      this.pendingUpdates.forEach((path) => {
+        this.toggleChecked(path);
+      });
+      this.pendingUpdates.clear();
+      this.batchUpdatesInProgress = false;
+    }, 0);
   }
 
   isChecked(path: string): boolean {
