@@ -146,29 +146,6 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         ".elm",
       ];
 
-      // Asset file extensions to exclude (keep this for additional filtering)
-      const assetExtensions = [
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".gif",
-        ".svg",
-        ".ico",
-        ".webp",
-        ".bmp",
-        ".tiff",
-        ".mp4",
-        ".mov",
-        ".avi",
-        ".mp3",
-        ".wav",
-        ".ogg",
-        ".woff",
-        ".woff2",
-        ".ttf",
-        ".eot",
-      ];
-
       for (const entryName of entries) {
         if (
           entryName.startsWith(".") ||
@@ -181,13 +158,9 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
         try {
           const stat = await fs.promises.stat(fullPath);
 
-          // For files, only include programming files and skip assets
+          // For files, only include programming files
           if (!stat.isDirectory()) {
             const lowerName = entryName.toLowerCase();
-            // Skip if it's an asset file
-            if (assetExtensions.some((ext) => lowerName.endsWith(ext))) {
-              continue;
-            }
             // Skip if it's not a programming file
             if (!programmingExtensions.some((ext) => lowerName.endsWith(ext))) {
               continue;
