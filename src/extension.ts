@@ -329,6 +329,10 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             margin-top: 1px;
             margin-bottom: 1px;
             padding-left: 3px;
+            display: block; /* Add this to control visibility */
+          }
+          .children.collapsed {
+            display: none;
           }
           .name {
             flex: 1;
@@ -336,6 +340,15 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             overflow: hidden;
             text-overflow: ellipsis;
             line-height: 20px;
+          }
+          .collapse-icon {
+            margin-left: 4px;
+            cursor: pointer;
+            user-select: none;
+            opacity: 0.7;
+          }
+          .collapse-icon:hover {
+            opacity: 1;
           }
           .file-list-section {
             margin-top: 5px;
@@ -526,6 +539,22 @@ class FileExplorerViewProvider implements vscode.WebviewViewProvider {
             div.appendChild(checkbox);
             div.appendChild(icon);
             div.appendChild(name);
+
+            // Add collapse/expand icon for directories
+            if (item.isDirectory && item.children && item.children.length > 0) {
+              const collapseIcon = document.createElement('span');
+              collapseIcon.className = 'collapse-icon';
+              collapseIcon.textContent = '↑'; // Default to expanded
+              collapseIcon.onclick = (e) => {
+                e.stopPropagation();
+                const nextSibling = div.nextElementSibling;
+                if (nextSibling && nextSibling.classList.contains('children')) {
+                  const isCollapsed = nextSibling.classList.toggle('collapsed');
+                  collapseIcon.textContent = isCollapsed ? '↓' : '↑';
+                }
+              };
+              div.appendChild(collapseIcon);
+            }
 
             // Add token count for files
             if (!item.isDirectory && item.tokens > 0) {
