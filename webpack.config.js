@@ -10,23 +10,26 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 /** @type WebpackConfig */
 const extensionConfig = {
-  target: "node", // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
-  mode: "none", // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
+  target: "node", // VS Code extensions run in a Node.js-context
+  mode: "none", // this leaves the source code as close as possible to the original
 
-  entry: "./src/extension.ts", // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+  entry: "./src/extension.ts",
   output: {
-    // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
     path: path.resolve(__dirname, "dist"),
     filename: "extension.js",
     libraryTarget: "commonjs2",
+    devtoolModuleFilenameTemplate: "../[resource-path]",
   },
   externals: {
-    vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
-    // modules added here also need to be added in the .vscodeignore file
+    vscode: "commonjs vscode", // the vscode-module is created on-the-fly and must be excluded
   },
   resolve: {
-    // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
     extensions: [".ts", ".js"],
+    fallback: {
+      path: require.resolve("path-browserify"),
+      fs: false,
+      crypto: false,
+    },
   },
   module: {
     rules: [
@@ -36,6 +39,11 @@ const extensionConfig = {
         use: [
           {
             loader: "ts-loader",
+            options: {
+              compilerOptions: {
+                sourceMap: true,
+              },
+            },
           },
         ],
       },
@@ -48,12 +56,20 @@ const extensionConfig = {
           from: "node_modules/tiktoken/tiktoken_bg.wasm",
           to: "tiktoken_bg.wasm",
         },
+        {
+          from: "assets",
+          to: "assets",
+        },
       ],
     }),
   ],
-  devtool: "nosources-source-map",
+  devtool: "source-map",
   infrastructureLogging: {
-    level: "log", // enables logging required for problem matchers
+    level: "log",
+  },
+  optimization: {
+    minimize: false,
   },
 };
+
 module.exports = [extensionConfig];
