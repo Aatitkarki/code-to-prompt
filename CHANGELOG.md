@@ -4,7 +4,13 @@ All notable changes to the "code-to-prompt" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [0.0.5] - 2024-03-20
+## [0.0.6] - 2025-02-14
+
+### Changed
+
+- Version bump for maintenance release
+
+## [0.0.5] - 2025-02-13
 
 ### Added
 
@@ -16,13 +22,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Performance improvements with debounced updates
 - Batch processing for file selection
 
-## [0.0.3] - 2024-03-19
+## [0.0.3] - 2025-02-12
 
 ### Fixed
 
 - Updated repository URL in documentation to the correct project repository
 
-## [0.0.2] - 2024-03-19
+## [0.0.2] - 2025-02-11
 
 ### Fixed
 
