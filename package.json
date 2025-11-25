@@ -1,96 +1,193 @@
 {
-  "name": "code-prompt-assistant",
-  "displayName": "Code To Prompt Assistant",
-  "description": "A VS Code extension to help you convert your code to AI prompts",
-  "version": "0.0.7",
-  "icon": "assets/logo.png",
+  "name": "code-to-prompt",
+  "displayName": "Code To Prompt",
+  "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
+  "version": "1.0.0",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/aatitkarki/code-to-prompt.git"
   },
-  "engines": {
-    "vscode": "^1.80.0"
-  },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
-  "publisher": "aatitkarki",
-  "author": {
-    "name": "Aatit Karki"
-  },
-  "license": "MIT",
-  "keywords": [
-    "code",
-    "prompt",
-    "ai",
-    "llm",
-    "code-to-prompt"
+  "activationEvents": [
+    "onView:codeToPromptExplorer",
+    "onView:codeToPromptSettings",
+    "onView:codeToPromptPresets",
+    "onCommand:codeToPrompt.copyPrompt",
+    "onCommand:codeToPrompt.openDashboard",
+    "onCommand:codeToPrompt.selectOpenEditors",
+    "onCommand:codeToPrompt.resetSelection",
+    "onCommand:codeToPrompt.reloadFiles",
+    "onCommand:codeToPrompt.importFromClipboard"
   ],
+  "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "code-prompt.updateSeparator",
-        "title": "Update Separator"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "code-prompt-explorer",
-          "title": "Code To Prompt Explorer",
-          "icon": "assets/logo.png"
+          "id": "codeToPrompt",
+          "title": "Code to Prompt",
+          "icon": "media/icon.png"
         }
       ]
     },
     "views": {
-      "code-prompt-explorer": [
+      "codeToPrompt": [
         {
-          "type": "webview",
-          "id": "code-prompt-directory",
-          "name": "Directory List"
+          "id": "codeToPromptExplorer",
+          "name": "Files"
         },
         {
           "type": "webview",
-          "id": "code-prompt-selected-files",
-          "name": "Selected Files"
+          "id": "codeToPromptSettings",
+          "name": "Settings"
+        },
+        {
+          "type": "webview",
+          "id": "codeToPromptPresets",
+          "name": "Presets"
         }
       ]
+    },
+    "commands": [
+      {
+        "command": "codeToPrompt.copyPrompt",
+        "title": "Code to Prompt: Copy Prompt",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "codeToPrompt.openDashboard",
+        "title": "Code to Prompt: Open Dashboard",
+        "icon": "$(play)"
+      },
+      {
+        "command": "codeToPrompt.selectOpenEditors",
+        "title": "Code to Prompt: Select Open Editors"
+      },
+      {
+        "command": "codeToPrompt.resetSelection",
+        "title": "Code to Prompt: Reset Selection",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "codeToPrompt.reloadFiles",
+        "title": "Code to Prompt: Reload Files",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codeToPrompt.importFromClipboard",
+        "title": "Code to Prompt: Import Prompt from Clipboard",
+        "icon": "$(cloud-download)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "codeToPrompt.openDashboard",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@0"
+        },
+        {
+          "command": "codeToPrompt.reloadFiles",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codeToPrompt.copyPrompt",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@2"
+        },
+        {
+          "command": "codeToPrompt.importFromClipboard",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@3"
+        },
+        {
+          "command": "codeToPrompt.resetSelection",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@4"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Code to Prompt",
+      "properties": {
+        "codeToPrompt.defaultFormat": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "xml",
+            "json"
+          ],
+          "default": "markdown",
+          "description": "The default output format (markdown, xml, json)."
+        },
+        "codeToPrompt.includeLineNumbers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add line numbers to the output code blocks."
+        },
+        "codeToPrompt.includeTreeStructure": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include a folder tree structure overview in the generated prompt (markdown/json)."
+        },
+        "codeToPrompt.respectGitignore": {
+          "type": "boolean",
+          "default": true,
+          "description": "Respect .gitignore rules when building the Files tree. Turn off to override .gitignore and show ignored files."
+        },
+        "codeToPrompt.ignorePatterns": {
+          "type": "string",
+          "default": "",
+          "description": "Additional ignore patterns (one per line, .gitignore-style globs) applied on top of binary filters and optional .gitignore."
+        },
+        "codeToPrompt.tokenBudget": {
+          "type": "number",
+          "default": 32000,
+          "description": "The warning threshold for the token counter."
+        },
+        "codeToPrompt.headerPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "Optional header instructions to prepend to every generated prompt (e.g. 'This is my current code, help me fix this bug...')."
+        },
+        "codeToPrompt.footerPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "Optional footer instructions to append to every generated prompt (e.g. 'Always output in the same format I have provided you')."
+        },
+        "codeToPrompt.appendStandardFooterNote": {
+          "type": "boolean",
+          "default": true,
+          "description": "Append the standard note: 'Always output in same format as provided. Only provide new or files that requires update' to the footer."
+        },
+        "codeToPrompt.requireImportConfirmation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require a confirmation dialog listing new and updated files before importing prompt content into the workspace."
+        }
+      }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -p ./ --watch",
+    "test": "echo \"No tests yet\""
   },
   "devDependencies": {
-    "@eslint/config-array": "^0.19.2",
-    "@eslint/object-schema": "^2.1.6",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.80.0",
-    "@typescript-eslint/eslint-plugin": "^6.1.0",
-    "@typescript-eslint/parser": "^6.1.0",
-    "@vscode/test-electron": "^2.3.4",
-    "copy-webpack-plugin": "^12.0.2",
-    "eslint": "^8.45.0",
-    "glob": "^11.0.1",
-    "mocha": "^10.2.0",
-    "path-browserify": "^1.0.1",
-    "rimraf": "^6.0.1",
-    "ts-loader": "^9.4.3",
-    "typescript": "^5.1.6",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
-    "tiktoken": "^1.0.20"
+    "ignore": "^5.3.0",
+    "tiktoken": "^1.0.0"
   }
 }
