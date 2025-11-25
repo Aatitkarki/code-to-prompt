@@ -63,7 +63,7 @@ export const EXCLUDED_FOLDERS = new Set([
 ]);
 
 /** Default separator for file content in prompts */
-export const DEFAULT_SEPARATOR = "=====";
+export const DEFAULT_SEPARATOR = "###";
 
 /** Default debounce delay for file system events (in ms) */
 export const DEBOUNCE_DELAY = 300;
@@ -71,11 +71,16 @@ export const DEBOUNCE_DELAY = 300;
 /** LLM model name for token counting */
 export const DEFAULT_MODEL = "gpt-4";
 
-/** WebView identifier */
-export const WEBVIEW_ID = "fileExplorerView";
+/** WebView identifiers */
+export const VIEW_IDS = {
+  DIRECTORY: "code-prompt-directory",
+  SELECTED_FILES: "code-prompt-selected-files",
+  CONTAINER: "code-prompt-explorer",
+} as const;
 
 /** File system watcher pattern */
-export const WATCHER_PATTERN = "**/*";
+export const WATCHER_PATTERN =
+  "**/*.{js,jsx,ts,tsx,py,java,cpp,c,h,hpp,cs,go,rs,php,rb,swift,kt,scala,html,css,scss,less,json,yaml,yml,md,txt}";
 
 /** File system watcher configuration */
 export const WATCHER_CONFIG = {

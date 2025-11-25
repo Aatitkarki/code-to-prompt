@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import { encoding_for_model } from "tiktoken";
 import { DEFAULT_MODEL } from "../config/constants";
+import * as vscode from "vscode";
 import {
   CacheProviderInterface,
   CachedContent,
@@ -15,6 +16,8 @@ export class CacheProvider implements CacheProviderInterface {
   private statsCache = new Map<string, CachedStats>();
   private contentCache = new Map<string, CachedContent>();
   private encoder: ReturnType<typeof encoding_for_model>;
+  private _onDidUpdateCache = new vscode.EventEmitter<void>();
+  readonly onDidUpdateCache = this._onDidUpdateCache.event;
 
   constructor() {
     try {
@@ -42,6 +45,7 @@ export class CacheProvider implements CacheProviderInterface {
 
       if (!cached || cached.mtime < current.mtime) {
         this.statsCache.set(path, current);
+        this.notifyUpdate();
         return current;
       }
 
@@ -83,6 +87,7 @@ export class CacheProvider implements CacheProviderInterface {
       };
 
       this.contentCache.set(path, result);
+      this.notifyUpdate();
       console.log(`Cached file ${path} with ${tokens} tokens`);
       return result;
     } catch (error) {
@@ -103,6 +108,7 @@ export class CacheProvider implements CacheProviderInterface {
   clear(): void {
     this.statsCache.clear();
     this.contentCache.clear();
+    this.notifyUpdate();
     console.log("Cleared cache");
   }
 
@@ -126,6 +132,15 @@ export class CacheProvider implements CacheProviderInterface {
       this.statsCache.delete(path);
       this.contentCache.delete(path);
     }
+    this.notifyUpdate();
     console.log(`Invalidated ${paths.length} cache entries`);
+  }
+
+  public notifyUpdate(): void {
+    this._onDidUpdateCache.fire();
+  }
+
+  dispose() {
+    this._onDidUpdateCache.dispose();
   }
 }

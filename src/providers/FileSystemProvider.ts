@@ -8,9 +8,14 @@ import {
  * Manages file selection state and content retrieval
  */
 export class FileSystemProvider implements FileSystemProviderInterface {
-  private checkedItems = new Set<string>();
-  private batchUpdatesInProgress = false;
-  private pendingUpdates = new Set<string>();
+  private checkedItems: Set<string> = new Set();
+  private cache: CacheProviderInterface;
+  private pendingUpdates: Set<string> = new Set();
+  private batchUpdatesInProgress: boolean = false;
+
+  constructor(cache: CacheProviderInterface) {
+    this.cache = cache;
+  }
 
   /**
    * Toggle the checked state of a single file
@@ -22,6 +27,7 @@ export class FileSystemProvider implements FileSystemProviderInterface {
     } else {
       this.checkedItems.add(path);
     }
+    this.cache.notifyUpdate();
   }
 
   /**
@@ -35,25 +41,20 @@ export class FileSystemProvider implements FileSystemProviderInterface {
     }
 
     this.batchUpdatesInProgress = true;
-
-    try {
-      paths.forEach((path) => {
-        if (this.checkedItems.has(path)) {
-          this.checkedItems.delete(path);
-        } else {
-          this.checkedItems.add(path);
-        }
-      });
-    } finally {
-      // Process any updates that came in during the batch operation
-      if (this.pendingUpdates.size > 0) {
-        const pendingPaths = Array.from(this.pendingUpdates);
-        this.pendingUpdates.clear();
-        this.batchToggleChecked(pendingPaths);
+    paths.forEach((path) => {
+      if (this.checkedItems.has(path)) {
+        this.checkedItems.delete(path);
+      } else {
+        this.checkedItems.add(path);
       }
+    });
 
-      this.batchUpdatesInProgress = false;
+    if (this.pendingUpdates.size > 0) {
+      this.pendingUpdates.clear();
     }
+
+    this.batchUpdatesInProgress = false;
+    this.cache.notifyUpdate();
   }
 
   /**
@@ -73,21 +74,16 @@ export class FileSystemProvider implements FileSystemProviderInterface {
   async getCheckedFilesContent(
     cache: CacheProviderInterface
   ): Promise<FileContent[]> {
-    const contentPromises = Array.from(this.checkedItems).map(async (path) => {
+    const contents: FileContent[] = [];
+    for (const path of this.checkedItems) {
       try {
-        const stats = await cache.getStats(path);
-        if (stats && !stats.isDirectory) {
-          const { content, tokens } = await cache.getFileContent(path);
-          return { path, content, tokens };
-        }
+        const content = await cache.getFileContent(path);
+        contents.push({ path, ...content });
       } catch (error) {
-        console.error(`Error processing file ${path}:`, error);
+        console.error(`Error getting content for ${path}:`, error);
       }
-      return null;
-    });
-
-    const contents = await Promise.all(contentPromises);
-    return contents.filter((item): item is FileContent => item !== null);
+    }
+    return contents;
   }
 
   /**
@@ -105,6 +101,16 @@ export class FileSystemProvider implements FileSystemProviderInterface {
     this.checkedItems.clear();
     this.pendingUpdates.clear();
     this.batchUpdatesInProgress = false;
+    this.cache.notifyUpdate();
+  }
+
+  /**
+   * Remove a single checked item
+   * @param path File path to remove
+   */
+  removeChecked(path: string): void {
+    this.checkedItems.delete(path);
+    this.cache.notifyUpdate();
   }
 
   /**

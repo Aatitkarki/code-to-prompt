@@ -1,43 +1,74 @@
 import * as vscode from "vscode";
-import { WEBVIEW_ID, WATCHER_PATTERN } from "./config/constants";
-import { WebViewProvider } from "./providers/WebViewProvider";
-import {
-  createFileWatcher,
-  registerCommandSafely,
-  showError,
-} from "./utils/helpers";
+import { WATCHER_PATTERN } from "./config/constants";
+import { DirectoryListProvider } from "./providers/DirectoryListProvider";
+import { SelectedFilesProvider } from "./providers/SelectedFilesProvider";
+import { FileSystemProvider } from "./providers/FileSystemProvider";
+import { CacheProvider } from "./providers/CacheProvider";
+import { createFileWatcher, showError } from "./utils/helpers";
 
 /**
  * Activate the extension
  */
 export function activate(context: vscode.ExtensionContext) {
   try {
-    // Initialize providers
-    const provider = new WebViewProvider(context.extensionUri);
+    // Initialize shared providers
+    const cacheProvider = new CacheProvider();
+    const fileSystemProvider = new FileSystemProvider(cacheProvider);
 
-    // Register WebView provider
-    const registration = vscode.window.registerWebviewViewProvider(
-      WEBVIEW_ID,
-      provider,
+    // Initialize view providers
+    const directoryListProvider = new DirectoryListProvider(
+      context.extensionUri,
+      fileSystemProvider,
+      cacheProvider
+    );
+    const selectedFilesProvider = new SelectedFilesProvider(
+      context.extensionUri,
+      fileSystemProvider,
+      cacheProvider
+    );
+
+    // Register WebView providers
+    const directoryViewRegistration = vscode.window.registerWebviewViewProvider(
+      "code-prompt-directory",
+      directoryListProvider,
       {
         webviewOptions: { retainContextWhenHidden: true },
       }
     );
 
-    // Create file system watcher
+    const selectedFilesViewRegistration =
+      vscode.window.registerWebviewViewProvider(
+        "code-prompt-selected-files",
+        selectedFilesProvider,
+        {
+          webviewOptions: { retainContextWhenHidden: true },
+        }
+      );
+
+    // Create file system watcher that updates views
     const watcher = createFileWatcher(
       WATCHER_PATTERN,
-      () => provider.debounceRefresh(),
+      () => {
+        directoryListProvider.debounceViewUpdate();
+      },
       context
     );
 
-    // Register commands
-    registerCommandSafely(context, "code-prompt.refresh", () => {
-      provider.refresh();
-    });
+    // Register separator update command
+    const updateSeparatorCommand = vscode.commands.registerCommand(
+      "code-prompt.updateSeparator",
+      (separator: string) => {
+        directoryListProvider.updateSeparator(separator);
+      }
+    );
 
     // Add to subscriptions
-    context.subscriptions.push(registration, watcher);
+    context.subscriptions.push(
+      directoryViewRegistration,
+      selectedFilesViewRegistration,
+      watcher,
+      updateSeparatorCommand
+    );
   } catch (error) {
     showError("Failed to activate extension", error as Error);
   }

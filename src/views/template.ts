@@ -2,141 +2,71 @@ import { styles } from "./styles";
 import { DEFAULT_SEPARATOR } from "../config/constants";
 import { FileItem, FileContent } from "../models/types";
 
-/**
- * Generate the WebView HTML content
- */
-export function generateWebViewContent(
+export function generateDirectoryViewContent(
   files: FileItem[],
-  checkedContents: FileContent[],
-  workspacePath: string
+  workspacePath: string,
+  separator: string = DEFAULT_SEPARATOR
 ): string {
   return `<!DOCTYPE html>
-<html>
+<html style="height: 100%">
   <head>
     <style>${styles}</style>
   </head>
   <body>
     <div class="header">
       <span>Directory List</span>
-      <div class="settings-icon" title="Settings">⚙️
-        <div class="settings-dropdown">
-          <div>Separator:</div>
-          <input type="text" class="separator-input" value="${DEFAULT_SEPARATOR}" />
+      <div class="header-icons">
+        <div id="copy-icon" class="icon" title="Copy to Clipboard">📄</div>
+        <div class="settings-icon icon" title="Settings">⚙️
+          <div class="settings-dropdown">
+            <div>Separator:</div>
+            <input type="text" class="separator-input" value="${separator}" />
+          </div>
         </div>
       </div>
     </div>
     <div id="root"></div>
-    <div class="file-list-section">
-      <div class="file-list-header">
-        Selected Files (LLM Format)
-        <div id="copy-icon" class="copy-icon" title="Copy to Clipboard">📄</div>
-      </div>
-      <div id="file-list" class="file-list-content"></div>
-      <div id="total-tokens" class="total-tokens"></div>
-    </div>
     <script>
       const vscode = acquireVsCodeApi();
       const files = ${JSON.stringify(files, null, 2)};
-      const checkedContents = ${JSON.stringify(checkedContents, null, 2)};
       const workspacePath = ${JSON.stringify(workspacePath)};
+      let separator = ${JSON.stringify(separator)};
       let totalFiles = 0;
       let checkedFiles = 0;
       
-      // Initialize state storage
       const state = vscode.getState() || { 
-        scrollPosition: 0, 
-        separator: '${DEFAULT_SEPARATOR}',
-        folderStates: {}
+        scrollPosition: 0,
+        folderStates: {},
+        separator: separator
       };
-
-      // Ensure folderStates exists
       if (!state.folderStates) {
         state.folderStates = {};
       }
       
-      let separator = state.separator;
-      
-      // Update separator input initial value
-      document.querySelector('.separator-input').value = separator;
-
       function saveFolderState(path, isCollapsed) {
         state.folderStates[path] = isCollapsed;
         vscode.setState(state);
       }
-
+      
       function getFolderState(path) {
         return state.folderStates[path] !== false;
       }
-
+      
       function saveScrollPosition() {
         const rootElement = document.getElementById('root');
         state.scrollPosition = rootElement.scrollTop;
         vscode.setState(state);
       }
-
+      
       function restoreScrollPosition() {
         const rootElement = document.getElementById('root');
         if (state.scrollPosition) {
           rootElement.scrollTop = state.scrollPosition;
         }
       }
-
-      // Add scroll event listener
+      
       document.getElementById('root').addEventListener('scroll', saveScrollPosition);
       
-      function updateFileList() {
-        const fileList = document.getElementById('file-list');
-        const totalTokensEl = document.getElementById('total-tokens');
-        
-        if (checkedContents.length === 0) {
-          fileList.textContent = 'No files selected';
-          totalTokensEl.textContent = '';
-          return;
-        }
-        
-        const fragment = document.createDocumentFragment();
-        let totalTokens = 0;
-        
-        checkedContents.forEach(file => {
-          const relativePath = file.path.replace(workspacePath + '/', '');
-          totalTokens += file.tokens;
-          const content = \`\${separator}\\n// \${relativePath} \\n\${separator}\\n\${file.content}\\n\${separator}\\n\\n\`;
-          fragment.appendChild(document.createTextNode(content));
-        });
-        
-        fileList.textContent = '';
-        fileList.appendChild(fragment);
-        totalTokensEl.textContent = \`Total tokens: \${totalTokens}\`;
-      }
-
-      function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-          const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-          };
-          clearTimeout(timeout);
-          timeout = setTimeout(later, wait);
-        };
-      }
-
-      const debouncedUpdateFileList = debounce(updateFileList, 100);
-
-      document.getElementById('copy-icon').onclick = () => {
-        if (checkedContents.length === 0) return;
-
-        const llmFormattedContent = checkedContents.map(file => {
-          const relativePath = file.path.replace(workspacePath + '/', '');
-          return \`\${separator}\\n// \${relativePath} \\n\${separator}\\n\${file.content}\\n\${separator}\`;
-        }).join('\\n\\n');
-        
-        navigator.clipboard.writeText(llmFormattedContent);
-        const icon = document.getElementById('copy-icon');
-        icon.textContent = '✓';
-        setTimeout(() => icon.textContent = '📄', 2000);
-      };
-
       function updateChildrenState(container, checked) {
         const items = container.getElementsByClassName('item');
         const paths = [];
@@ -156,7 +86,7 @@ export function generateWebViewContent(
           });
         }
       }
-
+      
       function createItem(item) {
         totalFiles++;
         if (item.isChecked) {
@@ -221,8 +151,6 @@ export function generateWebViewContent(
             command: 'toggleItem',
             path: item.path
           });
-          
-          debouncedUpdateFileList();
         };
         
         return div;
@@ -243,23 +171,30 @@ export function generateWebViewContent(
           }
         });
       }
-
-      // Initialize and render
+      
       const rootElement = document.getElementById('root');
       if (files && files.length > 0) {
         renderFiles(rootElement, files);
-        updateFileList();
         requestAnimationFrame(restoreScrollPosition);
-        vscode.postMessage({
-          command: 'updateCounts',
-          total: totalFiles,
-          checked: checkedFiles
-        });
       } else {
-        rootElement.innerHTML = '<div style="padding: 8px;">No files available</div>';
+        rootElement.innerHTML = '<div style="padding: 4px;">No files available</div>';
       }
 
-      // Settings handlers
+      document.getElementById('copy-icon').onclick = () => {
+        const checkedItems = Array.from(document.getElementsByClassName('checked'))
+          .filter(el => !el.querySelector('.folder')); // Exclude folders
+        
+        if (checkedItems.length === 0) return;
+        
+        vscode.postMessage({
+          command: 'copySelected'
+        });
+        
+        const icon = document.getElementById('copy-icon');
+        icon.textContent = '✓';
+        setTimeout(() => icon.textContent = '📄', 2000);
+      };
+      
       const settingsIcon = document.querySelector('.settings-icon');
       const settingsDropdown = document.querySelector('.settings-dropdown');
       const separatorInput = document.querySelector('.separator-input');
@@ -281,16 +216,123 @@ export function generateWebViewContent(
         separator = e.target.value || '${DEFAULT_SEPARATOR}';
         state.separator = separator;
         vscode.setState(state);
-        updateFileList();
+        vscode.postMessage({
+          command: 'updateSeparator',
+          separator: separator
+        });
       };
     </script>
   </body>
 </html>`;
 }
 
-/**
- * Generate error content for the WebView
- */
+export function generateSelectedFilesViewContent(
+  checkedContents: FileContent[],
+  workspacePath: string,
+  separator: string = DEFAULT_SEPARATOR
+): string {
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <style>${styles}</style>
+  </head>
+  <body>
+    <div class="header">
+      <span>Selected Files</span>
+      <div class="header-icons">
+        <div id="copy-icon" class="icon" title="Copy to Clipboard">📄</div>
+        <div class="settings-icon icon" title="Settings">⚙️
+          <div class="settings-dropdown">
+            <div>Separator:</div>
+            <input type="text" class="separator-input" value="${separator}" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="file-list-section">
+      <div id="file-list" class="file-list-content"></div>
+      <div id="total-tokens" class="total-tokens"></div>
+    </div>
+    <script>
+      const vscode = acquireVsCodeApi();
+      const checkedContents = ${JSON.stringify(checkedContents, null, 2)};
+      const workspacePath = ${JSON.stringify(workspacePath)};
+      let separator = ${JSON.stringify(separator)};
+      
+      const state = vscode.getState() || { separator: separator };
+      
+      function updateFileList() {
+        const fileList = document.getElementById('file-list');
+        const totalTokensEl = document.getElementById('total-tokens');
+        
+        if (checkedContents.length === 0) {
+          fileList.textContent = 'No files selected';
+          totalTokensEl.textContent = '';
+          return;
+        }
+        
+        const fragment = document.createDocumentFragment();
+        let totalTokens = 0;
+        
+        checkedContents.forEach(file => {
+          const relativePath = file.path.replace(workspacePath + '/', '');
+          totalTokens += file.tokens;
+          const content = \`\${separator}\\n// \${relativePath} \\n\${separator}\\n\${file.content}\\n\${separator}\\n\\n\`;
+          fragment.appendChild(document.createTextNode(content));
+        });
+        
+        fileList.textContent = '';
+        fileList.appendChild(fragment);
+        totalTokensEl.textContent = \`Total tokens: \${totalTokens}\`;
+      }
+      
+      document.getElementById('copy-icon').onclick = () => {
+        if (checkedContents.length === 0) return;
+        
+        const llmFormattedContent = checkedContents.map(file => {
+          const relativePath = file.path.replace(workspacePath + '/', '');
+          return \`\${separator}\\n// \${relativePath} \\n\${separator}\\n\${file.content}\\n\${separator}\`;
+        }).join('\\n\\n');
+        
+        navigator.clipboard.writeText(llmFormattedContent);
+        const icon = document.getElementById('copy-icon');
+        icon.textContent = '✓';
+        setTimeout(() => icon.textContent = '📄', 2000);
+      };
+      
+      const settingsIcon = document.querySelector('.settings-icon');
+      const settingsDropdown = document.querySelector('.settings-dropdown');
+      const separatorInput = document.querySelector('.separator-input');
+      
+      settingsIcon.onclick = (e) => {
+        e.stopPropagation();
+        settingsDropdown.classList.toggle('show');
+      };
+      
+      settingsDropdown.onclick = (e) => e.stopPropagation();
+      
+      document.addEventListener('click', (e) => {
+        if (!settingsIcon.contains(e.target)) {
+          settingsDropdown.classList.remove('show');
+        }
+      });
+      
+      separatorInput.oninput = (e) => {
+        separator = e.target.value || '${DEFAULT_SEPARATOR}';
+        state.separator = separator;
+        vscode.setState(state);
+        vscode.postMessage({
+          command: 'updateSeparator',
+          separator: separator
+        });
+      };
+      
+      updateFileList();
+    </script>
+  </body>
+</html>`;
+}
+
 export function generateErrorContent(message: string): string {
   return `<!DOCTYPE html>
     <html>

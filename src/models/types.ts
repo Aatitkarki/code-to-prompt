@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { Event } from "vscode";
 
 /** Represents a file or directory item in the explorer */
 export interface FileItem {
@@ -58,16 +59,34 @@ export interface WatcherConfig {
 
 /** Provider interfaces */
 export interface FileSystemProviderInterface {
+  isChecked(path: string): boolean;
   toggleChecked(path: string): void;
   batchToggleChecked(paths: string[]): void;
-  isChecked(path: string): boolean;
   getCheckedFilesContent(cache: CacheProviderInterface): Promise<FileContent[]>;
+  clearChecked(): void;
+  removeChecked(path: string): void;
+}
+
+export interface DirectoryProviderInterface extends vscode.WebviewViewProvider {
+  updateSeparator(separator: string): void;
+  debounceViewUpdate(delay?: number): void;
+  refresh(): void;
+}
+
+export interface SelectedFilesProviderInterface
+  extends vscode.WebviewViewProvider {
+  dispose(): void;
 }
 
 export interface CacheProviderInterface {
   getStats(path: string): Promise<CachedStats | null>;
   getFileContent(path: string): Promise<CachedContent>;
   clear(): void;
+  getCacheSize(): { stats: number; content: number };
+  invalidateEntries(paths: string[]): void;
+  notifyUpdate(): void;
+  onDidUpdateCache: Event<void>;
+  dispose(): void;
 }
 
 export interface WebViewProviderInterface extends vscode.WebviewViewProvider {

@@ -1,11 +1,11 @@
 export const styles = `
 body {
-  padding: 5px;
+  padding: 0;
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
-  height: 100vh;
+  height: 100%;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -15,8 +15,7 @@ body {
 .header {
   font-size: 1.1em;
   font-weight: bold;
-  margin-bottom: 8px;
-  padding: 4px;
+  padding: 8px;
   border-bottom: 1px solid var(--vscode-panel-border);
   flex-shrink: 0;
   display: flex;
@@ -24,15 +23,33 @@ body {
   justify-content: space-between;
 }
 
-.settings-icon {
+.header-icons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.icon {
   cursor: pointer;
   opacity: 0.8;
   padding: 4px;
-  position: relative;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  transition: all 0.2s;
 }
 
-.settings-icon:hover {
+.icon:hover {
   opacity: 1;
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.settings-icon {
+  position: relative;
 }
 
 .settings-dropdown {
@@ -41,10 +58,11 @@ body {
   right: 0;
   background: var(--vscode-dropdown-background);
   border: 1px solid var(--vscode-dropdown-border);
-  border-radius: 3px;
+  border-radius: 4px;
   padding: 8px;
   display: none;
   z-index: 1000;
+  min-width: 150px;
 }
 
 .settings-dropdown.show {
@@ -63,9 +81,6 @@ body {
 #root {
   flex: 1;
   overflow-y: auto;
-  max-height: 50vh;
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .item {
@@ -130,9 +145,9 @@ body {
 
 .children { 
   margin-left: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
   border-left: 1px solid var(--vscode-tree-inactiveIndentGuidesStroke);
-  margin-top: 1px;
-  margin-bottom: 1px;
   padding-left: 3px;
   display: block;
 }
@@ -161,22 +176,12 @@ body {
 }
 
 .file-list-section {
-  margin-top: 5px;
-  padding-top: 5px;
+  margin-top: 0;
+  padding-top: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.file-list-header {
-  font-size: 1em;
-  font-weight: bold;
-  margin-bottom: 6px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .copy-icon {
