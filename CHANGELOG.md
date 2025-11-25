@@ -4,6 +4,18 @@ All notable changes to the "code-to-prompt" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.0.0] - 2025-11-26
+
+### Added
+
+- Webpack bundling pipeline that produces a trimmed `dist/` build (with the wasm asset) for publishing
+- Prepublish step now runs the bundle to keep Marketplace packaging consistent
+
+### Changed
+
+- Extension entry now points at `dist/extension.js` so activation aligns with the shipped bundle
+- Documentation refresh with a clearer README and updated visuals
+
 ## [0.0.4] - 2024-03-19
 
 ### Added

@@ -10,224 +10,224 @@ Transform your project into clean, structured prompts for ChatGPT, Claude, Copil
 
 ---
 
+## 🎬 Quick look
+
+> Replace these with your real images / GIFs once you capture them.
+
+<p align="center">
+  <!-- Short looping GIF showing: select files → open dashboard → copy -->
+  <img src="media/overview.gif" width="720" alt="Code to Prompt overview" />
+</p>
+
+---
+
 ## ✨ What it does
 
 **Code to Prompt** lets you:
 
 - Browse your workspace in a dedicated **Files** view
-- Select exactly the files/folders you want (no `node_modules`, no binaries, no secrets by mistake)
-- See **live token estimates** for the combined prompt
-- Format everything into a single, structured block (Markdown, XML or JSON)
-- Add **header/footer instructions** so the AI knows what to do and how to respond
+- Select exactly the files/folders you want (no `node_modules`, no binaries, no `.env` by mistake)
+- See **live token estimates** for the whole prompt
+- Format everything into one structured block (Markdown, XML, or JSON)
 - Copy the result with **one click** — from the sidebar or from a full-screen dashboard
-- Optionally **import the AI’s reply back into your workspace**, creating/updating files safely
+- (Optional) Let the AI **edit your code and generate new files**, then safely import them back into your workspace
 
-All processing happens locally inside VS Code. Nothing is sent anywhere.
+All processing happens locally in VS Code. Nothing is sent anywhere by this extension.
 
----
+## 📁 Files sidebar
 
-## 🚀 Key Features
+<p align="center">
+  <img src="media/sidebar-files.png" width="720" alt="Code to Prompt – Files view" />
+</p>
 
-### 📁 Smart Files Sidebar
+**Files** view (Activity Bar icon):
 
-- **Interactive tree view** in its own activity bar icon
-- **Click to select / deselect** files and folders
-- **Folder toggle** selects/deselects all eligible files inside
-- **Select open editors** with one command
-- **Reset selection** with a single button
-- **Reload files** to pick up new / deleted files on disk
+- Interactive **tree view** of your workspace
+- Click files/folders to **select / deselect** them
+- Folder clicks select/unselect all eligible files inside
+- **Select Open Editors** command to grab all visible editors
+- **Title bar actions:**
+  - ▶️ **Open Dashboard**
+  - 🔄 **Reload Files**
+  - 📋 **Copy Prompt** (fast path, no dashboard)
+  - ⬇️ **Import from Clipboard** (apply AI-generated changes)
+  - 🧹 **Reset Selection**
 
-### 🧠 Git-aware, noise-free selection
+## 🧠 Smart, noise-free selection
 
 - **Respects `.gitignore`** by default so you don’t accidentally include:
   - `node_modules/`
-  - build output
+  - build output (`dist/`, `out/`…)
   - other ignored junk
-- Additional **ignore patterns** (e.g. `*.log`, `dist/`, `*.tmp`) configurable in settings
-- Built-in **binary guard** to skip images, archives, executables, PDFs, lock files, etc.
+- Additional **ignore patterns** (e.g. `*.log`, `dist/`, `*.tmp`) configurable in **Settings**
+- Built-in **binary guard** automatically skips:
+  - images, PDFs, archives, lock files, executables, etc.
 
-### 🧩 Multiple prompt formats
+## 🧩 Multiple prompt formats
 
 Choose the format that matches your LLM:
 
 - **Markdown** (default)
-  - `File: path/to/file.ts` header
+  - `File: src/main.ts` header
   - Language-tagged fenced code blocks
-  - Optional project **tree summary** at the top
+  - Optional **project tree summary** at the top
 - **XML**
-  - `<documents>` with one `<document path="...">` per file
-  - Code is dedented on import so Python/whitespace-sensitive languages stay valid
+  - `<documents>` root with `<document path="...">` entries
+  - Ideal for “tools / schema” style prompts
 - **JSON**
-  - `{ "documents": [ { "path": "...", "content": "..." } ], "tree": "..." }`
+  - `{ "documents": [ { path, content } ], "tree": "..." }`
+  - Great for API calls or custom tooling
 
-You can switch format at any time in the **Settings** view.
+You can switch format any time in the **Settings** view.
 
-### 🧮 Token-aware prompts
+---
 
-- **Live token count** for the full prompt (using `tiktoken` when available, with a heuristic fallback)
+## 📊 Token-aware prompts
+
+- **Live token count** for the full prompt
+- Uses `tiktoken` when available, with a **fallback heuristic** if not
 - Configurable **token budget** (e.g. 8k, 32k, 128k)
-- Warnings when your prompt goes over your chosen budget (in notifications and dashboard)
+- Warnings when the prompt goes over budget
+- Token info is visible in:
+  - The **Dashboard**
+  - Notification messages after copy
 
-### 🧱 Dashboard view
+## 🧱 Dashboard view
 
-A full-screen **Dashboard** command (`Code to Prompt: Open Dashboard`) gives you:
+<p align="center">
+  <img src="media/dashboard.png" width="720" alt="Code to Prompt – Dashboard view" />
+</p>
 
-- **Selected files list** with:
-  - Reordering via **↑ / ↓** buttons
-  - File paths shown in the order they’ll appear in the prompt
-- **Prompt preview** you can inspect and tweak
-- **Include tree structure** toggle (for Markdown and JSON formats)
-- **Token info & budget** always visible
-- **Copy Prompt** and **Reset** buttons at the top
+Open the **Dashboard** via:
 
-### 🧾 Header & footer prompts
+- ▶️ icon in the Files view, or
+- Command Palette: **“Code to Prompt: Open Dashboard”**
 
-Guide the model without re-typing the same instructions:
+Dashboard gives you:
 
-- **Header prompt** — text automatically inserted _before_ the files block  
-  e.g.
+- **Selected files list**
+  - Shows paths in the exact order they’ll appear in the prompt
+  - Reorder via **↑ / ↓** buttons
+- **Prompt Preview**
+  - Inspect the generated prompt before copying
+  - Uses current format (Markdown/XML/JSON) + your header/footer prompts
+- **Controls**
+  - **Include tree structure** toggle (for Markdown / JSON)
+  - **Token count & budget** indicator
+  - **Copy Prompt**
+  - **Reset** (clears selection and refreshes)
 
-  > “This is my current code. Help me fix the bug in X and refactor Y.”
+## 💾 Presets
 
-- **Footer prompt** — text automatically inserted _after_ the files block  
-  e.g.
-
-  > “Return only updated files in the same format, no explanations.”
-
-- Optional checkbox to append a **standard footer note**:
-  > “Always output in same format as provided. Only provide new or files that requires update.”
-
-This makes it easy to keep models like ChatGPT/Claude consistently returning `<documents>`, JSON, or `File:` blocks that you can re-import safely.
-
-### 💾 Presets
+<p align="center">
+  <img src="media/sidebar.png" width="720" alt="Code to Prompt – Presets view" />
+</p>
 
 Save and reuse your favorite selections:
 
-- Create named **presets** (e.g. “Auth system”, “DB schema”, “API handlers”)
-- Load a preset to instantly restore that selection
-- Manage presets in the dedicated **Presets** view (save / load / delete)
+- Create named **presets** (e.g. `Auth system`, `DB schema`, `API handlers`)
+- Presets remember the list + order of selected paths
+- Load a preset to instantly restore the same selection
+- Delete presets you no longer need
 
-### 📥 Import from AI output (round-trip workflow)
+All managed from the **Presets** view in the sidebar.
 
-Code to Prompt supports a full **round-trip** workflow:
+## ⚙️ Settings & header/footer prompts
 
-1. Generate a prompt from your files (Markdown / XML / JSON).
-2. Send it to your LLM.
-3. Copy the model’s reply.
-4. Run **“Code to Prompt: Import Prompt from Clipboard”**.
+<p align="center">
+  <img src="media/sidebar.png" width="720" alt="Code to Prompt – Settings view" />
+</p>
 
-The importer will:
+The **Settings** view lets you tune how prompts are generated:
 
-- **Auto-detect format** (XML / JSON / Markdown) — no settings needed
-- Parse all files the model returned
-- Compare them against your workspace
-- Classify:
-  - **New files** (created)
-  - **Updated files** (overwritten)
-  - **Unchanged files** (ignored)
+- **Format**: `markdown` / `xml` / `json`
+- **Include line numbers**: prepend `1:`, `2:`… in code blocks
+- **Include tree structure**: add a text tree of selected files/folders
+- **Respect `.gitignore`**: toggle to show/hide ignored files
+- **Ignore patterns**: extra `.gitignore`-style globs (one per line)
+- **Token budget**: numeric limit used for warnings
 
-If **“Require confirmation before import”** is enabled (recommended):
+### Header / footer prompt text
 
-- A modal summary shows:
-  - New files count & sample names
-  - Updated files count & sample names
-- You confirm or cancel before anything is written.
+You can also define:
 
-After import:
+- **Header prompt** — prepended above the generated documents, e.g.:
 
-- The file tree is reloaded
-- A notification summarizes how many files were **created** and **updated**
+  > `This is my current code. Help me fix performance issues in the data layer.`
 
----
+- **Footer prompt** — appended below the documents, e.g.:
 
-## 📸 Screenshots
+  > `Always output in the same format I have provided.`
 
-> Replace these with real images in your repo (`media/` or `assets/`):
+- Optional **standard footer note**:
 
-- **Sidebar Files view**  
-  `![Code to Prompt Files view](media/sidebar.png)`
+  > `Always output in same format as provided. Only provide new or files that require update.`
 
-- **Dashboard**  
-  `![Code to Prompt Dashboard](media/dashboard.png)`
+These help you “lock in” how the AI responds, especially when using the **Import** feature.
 
----
+## 📥 Importing AI-generated changes
 
-## 📥 Installation
+You can round-trip between your code and the model:
 
-1. Open **Visual Studio Code**
-2. Go to **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-3. Search for **“Code to Prompt”**
-4. Click **Install**
+1. **Generate a prompt** with Code to Prompt (Markdown / XML / JSON).
+2. Ask your model to **edit code or create new files**, and instruct it to respond in the same format.
+3. Copy the model’s response.
+4. Run **“Code to Prompt: Import Prompt from Clipboard”** or click the ⬇️ icon in the Files view.
 
-Or install the packaged `.vsix` from the command palette:  
-**“Extensions: Install from VSIX…”**
+The extension will:
 
----
+- Auto-detect whether the response is **Markdown**, **XML**, or **JSON**
+- Parse each document entry (`path` + `content`)
+- Compare with your workspace to figure out:
+  - **New files** (will be created)
+  - **Existing files** (will be overwritten)
 
-## 🧑‍💻 Usage
+### Import confirmation dialog
 
-### 1. Open the sidebar
+If **Require import confirmation** is enabled in Settings:
 
-- Click the **Code to Prompt** icon in the Activity Bar.
-- You’ll see three views:
-  - **Files** – selection + quick actions
-  - **Settings** – output & ignore configuration
-  - **Presets** – saved selections
+- A summary dialog will show:
+  - Number of **new** files + their paths
+  - Number of **updated** files + their paths
+- You can **Confirm** or **Cancel** the import
 
-### 2. Select files
+<p align="center">
+  <img src="media/import-confirm.png" width="720" alt="Code to Prompt – Import confirmation dialog" />
+</p>
 
-In the **Files** view:
+This gives you a safety net against accidental massive refactors.
 
-1. Expand folders and click items to toggle selection.
-2. Click a folder to select / deselect all eligible files inside.
-3. Use **“Select Open Editors”** to quickly add all currently open files.
-4. Use the **Reset** icon to clear the selection.
-5. Use the **Reload** icon if you’ve created / deleted files on disk and want to refresh the tree.
-6. Use the **Copy** icon to copy a prompt directly from the sidebar (fast path).
-7. Use the **Play** icon to open the full Dashboard.
+## 🧑‍💻 Usage – quick guide
 
-### 3. Copy a prompt (fast path)
+1. **Open the sidebar**
 
-If you just want a prompt quickly:
+   - Click the **Code to Prompt** icon in the Activity Bar
+   - You’ll see **Files**, **Settings**, and **Presets** views
 
-1. Select your files in the **Files** view.
-2. Click the **Copy** icon in the view title bar.
-3. A formatted prompt (with your header/footer, if configured) is copied to your clipboard.
-4. Paste it into ChatGPT / Claude / Copilot / DeepSeek.
+2. **Select files**
 
-### 4. Use the Dashboard (full control)
+   - Expand folders in **Files**
+   - Click to toggle files/folders
+   - Use **Select Open Editors** to add all currently visible files
+   - Use **Reset** to clear selection
 
-For more control:
+3. **Generate a prompt**
 
-1. Click the **Play** icon in the **Files** view title  
-   or run the command: **“Code to Prompt: Open Dashboard”**.
-2. In the dashboard:
-   - Reorder files with the **↑ / ↓** buttons.
-   - Toggle **“Include tree structure”** (Markdown/JSON).
-   - Inspect the full prompt in the **Prompt Preview** panel.
-   - Watch the **token count** & **budget** indicators.
-3. Click **Copy Prompt** to copy the current preview to your clipboard.
-4. Click **Reset** to clear the selection and start over.
+   - For a fast copy:
+     - Click **📋 Copy Prompt** in the Files view title bar
+   - For full control:
+     - Click **▶️ Open Dashboard**
+     - Reorder files, tweak settings, then **Copy Prompt**
 
-### 5. Save a preset
+4. **Use with your LLM**
 
-1. In the **Files** view, select the files/folders you want.
-2. Switch to the **Presets** view.
-3. Give your preset a name (e.g. “Core app + routes”) and click **Save**.
-4. Later, click **Load** on that preset to restore the same selection.
+   - Paste the prompt into ChatGPT / Claude / Copilot / DeepSeek
+   - Customize the header/footer prompts to guide the model
 
-### 6. Import AI changes back into your project
-
-1. Generate a prompt with Code to Prompt (Markdown / XML / JSON).
-2. Send it to your LLM with your preferred instructions.
-3. Copy the model’s reply (which should use the same format).
-4. In VS Code, run **“Code to Prompt: Import Prompt from Clipboard”**.
-5. Review the confirmation dialog (if enabled):
-   - New files
-   - Updated files
-6. Click **Import** to apply changes.
-
-> Tip: Use the footer / standard note so the model only returns **new or changed** files, in the same multi-file format.
+5. **Import changes back (optional)**
+   - Copy the model’s response (same format)
+   - Run **Import Prompt from Clipboard**
+   - Review the confirmation dialog and confirm to write files
 
 ---
 
@@ -238,56 +238,64 @@ You can manage all settings via:
 - The **Settings** view in the sidebar, or
 - VS Code Settings (`Ctrl+,` / `Cmd+,`) → search for **“Code to Prompt”**
 
-Available settings (summary):
+Key settings:
 
-| Setting                                  | Type    | Default      | Description                                                                                                           |
-| ---------------------------------------- | ------- | ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `codeToPrompt.defaultFormat`             | string  | `"markdown"` | Output format: `"markdown"`, `"xml"`, or `"json"`.                                                                    |
-| `codeToPrompt.includeLineNumbers`        | boolean | `false`      | Add line numbers to each code block.                                                                                  |
-| `codeToPrompt.includeTreeStructure`      | boolean | `false`      | Include a text tree of the selected files/folders (Markdown/JSON).                                                    |
-| `codeToPrompt.respectGitignore`          | boolean | `true`       | Respect `.gitignore` rules when building the file tree.                                                               |
-| `codeToPrompt.ignorePatterns`            | string  | `""`         | Extra ignore patterns (one per line, `.gitignore`-style).                                                             |
-| `codeToPrompt.tokenBudget`               | number  | `32000`      | Token budget used for warnings in notifications and dashboard.                                                        |
-| `codeToPrompt.headerPrompt`              | string  | `""`         | Optional text prepended above every generated prompt.                                                                 |
-| `codeToPrompt.footerPrompt`              | string  | `""`         | Optional text appended after every generated prompt.                                                                  |
-| `codeToPrompt.appendStandardFooterNote`  | boolean | `true`       | Append the standard note: “Always output in same format as provided. Only provide new or files that requires update”. |
-| `codeToPrompt.requireImportConfirmation` | boolean | `true`       | Require a confirmation dialog listing new/updated files before importing from clipboard.                              |
+| Setting                                  | Type    | Default      | Description                                                                                  |
+| ---------------------------------------- | ------- | ------------ | -------------------------------------------------------------------------------------------- |
+| `codeToPrompt.defaultFormat`             | string  | `"markdown"` | Output format: `markdown`, `xml`, or `json`.                                                 |
+| `codeToPrompt.includeLineNumbers`        | boolean | `false`      | Add line numbers to each code block.                                                         |
+| `codeToPrompt.includeTreeStructure`      | boolean | `false`      | Include a text tree of the selected files/folders.                                           |
+| `codeToPrompt.respectGitignore`          | boolean | `true`       | Respect `.gitignore` rules when building the Files tree.                                     |
+| `codeToPrompt.ignorePatterns`            | string  | `""`         | Extra ignore patterns (one per line, `.gitignore`-style).                                    |
+| `codeToPrompt.tokenBudget`               | number  | `32000`      | Token budget used for warnings.                                                              |
+| `codeToPrompt.headerPrompt`              | string  | `""`         | Optional header instructions to prepend to every prompt.                                     |
+| `codeToPrompt.footerPrompt`              | string  | `""`         | Optional footer instructions to append to every prompt.                                      |
+| `codeToPrompt.appendStandardFooterNote`  | boolean | `true`       | Append the standard “same format / only changed files” note to the footer.                   |
+| `codeToPrompt.requireImportConfirmation` | boolean | `true`       | Show a confirmation summary (new/updated files) before writing any imported changes to disk. |
 
 ---
 
 ## ⌨️ Commands
 
-These commands are available from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
+Available from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-- **Code to Prompt: Open Dashboard** – show the full dashboard view
-- **Code to Prompt: Copy Prompt** – copy the prompt for the current selection
-- **Code to Prompt: Select Open Editors** – select all visible text editors
-- **Code to Prompt: Reset Selection** – clear all selected files
-- **Code to Prompt: Reload Files** – rebuild the file tree from disk
-- **Code to Prompt: Import Prompt from Clipboard** – parse AI output (Markdown / XML / JSON) and create/update files
+- **Code to Prompt: Open Dashboard**
+- **Code to Prompt: Copy Prompt**
+- **Code to Prompt: Select Open Editors**
+- **Code to Prompt: Reset Selection**
+- **Code to Prompt: Reload Files**
+- **Code to Prompt: Import Prompt from Clipboard**
 
 ---
+
+## 📥 Installation
+
+1. Open **Visual Studio Code**
+2. Go to **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Search for **“Code to Prompt”**
+4. Click **Install**
+
+Or install a local `.vsix`:
+
+```bash
+code --install-extension code-to-prompt-x.y.z.vsix
+```
 
 ## 🔐 Privacy & Security
 
-- All processing happens **locally** inside VS Code.
-- Your code is **never** sent to external servers by this extension.
-- Use `.gitignore` and the **ignore patterns** setting to avoid including sensitive files such as `.env` or secret keys in your prompts.
-- The import feature only writes to files inside your workspace and can be protected by a confirmation dialog.
-
----
+- All processing happens **locally** inside VS Code
+- Your code is **never** sent to external servers by this extension
+- Use `.gitignore` and **ignore patterns** to avoid including secrets (e.g. `.env`, keys) in your prompts
 
 ## 🤝 Contributing
 
-Bugs, ideas, or feature requests are welcome!
+Bugs, ideas, feature requests — all welcome!
 
-1. Open an issue or discussion on the  
-   [GitHub repository](https://github.com/aatitkarki/code-to-prompt) <!-- adjust URL if needed -->
+1. Open an issue or discussion on
+   [GitHub](https://github.com/aatitkarki/code-to-prompt)
 2. Fork the repo
 3. Create a feature branch
 4. Submit a pull request
-
----
 
 ## 📄 License
 
