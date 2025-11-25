@@ -184,7 +184,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run bundle",
+    "bundle": "webpack --config webpack.config.js",
     "compile": "tsc -p ./",
     "watch": "tsc -p ./ --watch",
     "test": "echo \"No tests yet\""
@@ -192,7 +193,11 @@
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.75.0",
-    "typescript": "^5.0.0"
+    "copy-webpack-plugin": "^11.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.0.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "ignore": "^5.3.0",
