@@ -113,21 +113,6 @@ Dashboard gives you:
   - **Copy Prompt**
   - **Reset** (clears selection and refreshes)
 
-## 💾 Presets
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar-presets.png" width="250" alt="Code to Prompt – Presets view" />
-</p>
-
-Save and reuse your favorite selections:
-
-- Create named **presets** (e.g. `Auth system`, `DB schema`, `API handlers`)
-- Presets remember the list + order of selected paths
-- Load a preset to instantly restore the same selection
-- Delete presets you no longer need
-
-All managed from the **Presets** view in the sidebar.
-
 ## ⚙️ Settings & header/footer prompts
 
 <p align="center">
@@ -160,6 +145,21 @@ You can also define:
   > `Always output in same format as provided. Only provide new or files that require update.`
 
 These help you “lock in” how the AI responds, especially when using the **Import** feature.
+
+## 💾 Presets
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar-presets.png" width="250" alt="Code to Prompt – Presets view" />
+</p>
+
+Save and reuse your favorite selections:
+
+- Create named **presets** (e.g. `Auth system`, `DB schema`, `API handlers`)
+- Presets remember the list + order of selected paths
+- Load a preset to instantly restore the same selection
+- Delete presets you no longer need
+
+All managed from the **Presets** view in the sidebar.
 
 ## 📥 Importing AI-generated changes
 

@@ -2,7 +2,7 @@
   "name": "code-to-prompt",
   "displayName": "Code To Prompt",
   "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "icon": "assets/icon.png",
   "publisher": "aatitkarki",
   "engines": {
