@@ -4,6 +4,7 @@
   "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
   "version": "1.0.0",
   "icon": "media/icon.png",
+  "publisher": "aatitkarki",
   "engines": {
     "vscode": "^1.75.0"
   },

@@ -5,12 +5,6 @@ export interface FileContent {
   content: string;
 }
 
-/**
- * Format files as a single prompt string.
- *
- * - headerPrompt: inserted BEFORE all files
- * - footerPrompt: inserted AFTER all files
- */
 export function formatPrompt(
   files: FileContent[],
   format: OutputFormat,
@@ -19,11 +13,16 @@ export function formatPrompt(
   footerPrompt: string,
   includeTreeStructure: boolean
 ): string {
-  const header = headerPrompt ? headerPrompt.trim() + "\n\n" : "";
-  const footer = footerPrompt ? "\n\n" + footerPrompt.trim() : "";
+  const header =
+    headerPrompt && headerPrompt.trim().length > 0
+      ? headerPrompt.trim() + "\n\n"
+      : "";
+  const footer =
+    footerPrompt && footerPrompt.trim().length > 0
+      ? "\n\n" + footerPrompt.trim()
+      : "";
 
-  let body = "";
-
+  let body: string;
   switch (format) {
     case "xml":
       body = formatXml(files, includeLineNumbers);

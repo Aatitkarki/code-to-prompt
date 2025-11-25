@@ -66,6 +66,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
       requireImportConfirmation,
     };
 
+    const standardFooterText =
+      "Always output in same format as provided. Only provide new or files that requires update";
+
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -83,8 +86,11 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
               padding: 8px;
             }
             h3 {
-              margin-top: 0;
+              margin-top: 12px;
               font-size: 13px;
+            }
+            h3:first-of-type {
+              margin-top: 0;
             }
             .field {
               margin-bottom: 8px;
@@ -138,33 +144,38 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
             <textarea id="ignorePatterns" rows="4" placeholder="e.g.\n*.log\n*.tmp\nbuild/"></textarea>
             <div class="hint">Additional ignore patterns, one per line, using .gitignore-style globs.</div>
           </div>
-
           <div class="field">
             <label for="tokenBudget">Token budget</label>
             <input type="number" id="tokenBudget" min="1000" step="1000" />
             <div class="hint">Used for warnings in notifications and dashboard.</div>
           </div>
 
-          <h3>Header & Footer</h3>
+          <h3>Header / Footer Prompts</h3>
           <div class="field">
-            <label for="headerPrompt">Header prompt</label>
-            <textarea id="headerPrompt" rows="3" placeholder="This is my current code. Help me fix X..."></textarea>
-            <div class="hint">Inserted above the files block in every prompt.</div>
+            <label for="headerPrompt">Header prompt (optional)</label>
+            <textarea id="headerPrompt" rows="3" placeholder="This is my current code, help me fix the bug in ..."></textarea>
+            <div class="hint">Prepended above the generated prompt. Great for task instructions.</div>
           </div>
           <div class="field">
-            <label for="footerPrompt">Footer prompt</label>
-            <textarea id="footerPrompt" rows="3" placeholder="Return only the updated files in the same format..."></textarea>
-            <div class="hint">Inserted after the files block in every prompt.</div>
+            <label for="footerPrompt">Footer prompt (optional)</label>
+            <textarea id="footerPrompt" rows="3" placeholder="Any extra notes for the AI..."></textarea>
+            <div class="hint">Appended below the generated prompt.</div>
           </div>
           <div class="field">
-            <label><input type="checkbox" id="appendStandardFooterNote" /> Append standard footer note</label>
-            <div class="hint">Adds: “Always output in same format as provided. Only provide new or files that requires update”.</div>
+            <label>
+              <input type="checkbox" id="appendStandardFooterNote" />
+              Append note: "<span id="standardFooterText">${standardFooterText}</span>"
+            </label>
+            <div class="hint">This note is helpful to keep the AI output in the same multi-file format and avoid unchanged files.</div>
           </div>
 
-          <h3>Import</h3>
+          <h3>Import Settings</h3>
           <div class="field">
-            <label><input type="checkbox" id="requireImportConfirmation" /> Require confirmation before import</label>
-            <div class="hint">Shows a summary of new and updated files before writing to disk.</div>
+            <label>
+              <input type="checkbox" id="requireImportConfirmation" />
+              Require confirmation before importing prompt files
+            </label>
+            <div class="hint">Shows a summary of new and updated files before writing them to disk.</div>
           </div>
 
           <script nonce="${nonce}">
@@ -227,11 +238,19 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
             });
 
             appendStandardFooterNoteEl.addEventListener('change', () => {
-              vscode.postMessage({ command: 'updateSetting', key: 'appendStandardFooterNote', value: appendStandardFooterNoteEl.checked });
+              vscode.postMessage({
+                command: 'updateSetting',
+                key: 'appendStandardFooterNote',
+                value: appendStandardFooterNoteEl.checked
+              });
             });
 
             requireImportConfirmationEl.addEventListener('change', () => {
-              vscode.postMessage({ command: 'updateSetting', key: 'requireImportConfirmation', value: requireImportConfirmationEl.checked });
+              vscode.postMessage({
+                command: 'updateSetting',
+                key: 'requireImportConfirmation',
+                value: requireImportConfirmationEl.checked
+              });
             });
           </script>
         </body>

@@ -107,7 +107,8 @@ function parseMarkdown(text: string): FileContent[] {
       continue;
     }
 
-    i++; // skip opening fence
+    // const fenceLine = lines[i].trim(); // language is not used
+    i++;
 
     const contentLines: string[] = [];
     while (i < lines.length && !lines[i].trim().startsWith("```")) {
