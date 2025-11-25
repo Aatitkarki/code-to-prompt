@@ -116,7 +116,7 @@ Dashboard gives you:
 ## 💾 Presets
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar.png" width="250" alt="Code to Prompt – Presets view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar-presets.png" width="250" alt="Code to Prompt – Presets view" />
 </p>
 
 Save and reuse your favorite selections:
@@ -131,7 +131,7 @@ All managed from the **Presets** view in the sidebar.
 ## ⚙️ Settings & header/footer prompts
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar.png" width="250" alt="Code to Prompt – Settings view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar-setting.png" width="250" alt="Code to Prompt – Settings view" />
 </p>
 
 The **Settings** view lets you tune how prompts are generated:
