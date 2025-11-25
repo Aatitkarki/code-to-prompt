@@ -1,7 +1,7 @@
 # Code to Prompt
 
 <p align="center">
-  <img src="assets/logo.png" width="200" alt="Code to Prompt logo" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/assets/icon.png" width="150" alt="Code to Prompt logo" />
   <br />
   <strong>Turn your codebase into LLM-ready context in one click.</strong>
 </p>
@@ -12,14 +12,10 @@ Transform your project into clean, structured prompts for ChatGPT, Claude, Copil
 
 ## 🎬 Quick look
 
-> Replace these with your real images / GIFs once you capture them.
-
 <p align="center">
   <!-- Short looping GIF showing: select files → open dashboard → copy -->
-  <img src="media/overview.gif" width="720" alt="Code to Prompt overview" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/dashboard.png" width="720" alt="Code to Prompt overview" />
 </p>
-
----
 
 ## ✨ What it does
 
@@ -37,7 +33,7 @@ All processing happens locally in VS Code. Nothing is sent anywhere by this exte
 ## 📁 Files sidebar
 
 <p align="center">
-  <img src="media/sidebar-files.png" width="720" alt="Code to Prompt – Files view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar.png" width="250" alt="Code to Prompt – Files view" />
 </p>
 
 **Files** view (Activity Bar icon):
@@ -95,7 +91,7 @@ You can switch format any time in the **Settings** view.
 ## 🧱 Dashboard view
 
 <p align="center">
-  <img src="media/dashboard.png" width="720" alt="Code to Prompt – Dashboard view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/dashboard.png" width="720" alt="Code to Prompt – Dashboard view" />
 </p>
 
 Open the **Dashboard** via:
@@ -120,7 +116,7 @@ Dashboard gives you:
 ## 💾 Presets
 
 <p align="center">
-  <img src="media/sidebar.png" width="720" alt="Code to Prompt – Presets view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar.png" width="250" alt="Code to Prompt – Presets view" />
 </p>
 
 Save and reuse your favorite selections:
@@ -135,7 +131,7 @@ All managed from the **Presets** view in the sidebar.
 ## ⚙️ Settings & header/footer prompts
 
 <p align="center">
-  <img src="media/sidebar.png" width="720" alt="Code to Prompt – Settings view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/sidebar.png" width="250" alt="Code to Prompt – Settings view" />
 </p>
 
 The **Settings** view lets you tune how prompts are generated:
@@ -192,7 +188,7 @@ If **Require import confirmation** is enabled in Settings:
 - You can **Confirm** or **Cancel** the import
 
 <p align="center">
-  <img src="media/import-confirm.png" width="720" alt="Code to Prompt – Import confirmation dialog" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/import-confirm.png" width="720" alt="Code to Prompt – Import confirmation dialog" />
 </p>
 
 This gives you a safety net against accidental massive refactors.
