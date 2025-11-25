@@ -3,8 +3,8 @@
   "displayName": "Code To Prompt",
   "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
   "version": "1.0.0",
-  "icon": "media/icon.png",
-  "publisher": "aatitkarki",
+  "icon": "assets/icon.png",
+  "publisher": "Aatit Karki",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -14,6 +14,13 @@
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "code",
+    "prompt",
+    "ai",
+    "llm",
+    "code-to-prompt"
   ],
   "activationEvents": [
     "onView:codeToPromptExplorer",
@@ -26,14 +33,14 @@
     "onCommand:codeToPrompt.reloadFiles",
     "onCommand:codeToPrompt.importFromClipboard"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
           "id": "codeToPrompt",
           "title": "Code to Prompt",
-          "icon": "media/icon.png"
+          "icon": "assets/icon.png"
         }
       ]
     },

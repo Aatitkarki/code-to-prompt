@@ -1,7 +1,7 @@
 # Code to Prompt
 
 <p align="center">
-  <img src="media/logo.png" width="200" alt="Code to Prompt logo" />
+  <img src="assets/logo.png" width="200" alt="Code to Prompt logo" />
   <br />
   <strong>Turn your codebase into LLM-ready context in one click.</strong>
 </p>
