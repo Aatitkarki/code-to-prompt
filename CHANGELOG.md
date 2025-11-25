@@ -4,25 +4,22 @@ All notable changes to the "code-to-prompt" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [0.0.6] - 2025-02-14
-
-### Changed
-
-- Version bump for maintenance release
-
-## [0.0.5] - 2025-02-13
+## [0.0.4] - 2024-03-19
 
 ### Added
 
-- Enhanced UI with improved file tree visualization
-- Token count display for individual files
-- Settings dropdown with customizable file separator
-- Collapsible folder structure with state persistence
-- Copy to clipboard functionality with visual feedback
-- Performance improvements with debounced updates
-- Batch processing for file selection
+- Token count display for each file
+- Settings dropdown with separator configuration
+- Improved file selection state persistence
+- Better handling of scroll position state
 
-## [0.0.3] - 2025-02-12
+### Changed
+
+- Enhanced UI with token counts and better visual hierarchy
+- Improved directory expansion state persistence
+- Better error handling and logging
+
+## [0.0.3] - 2024-03-19
 
 ### Fixed
 
