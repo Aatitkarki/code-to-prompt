@@ -1,23 +1,20 @@
 {
-  "name": "code-to-prompt",
-  "displayName": "Code To Prompt",
-  "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
-  "version": "0.0.4",
+  "name": "code-prompt-assistant",
+  "displayName": "Code To Prompt Assistant",
+  "description": "A VS Code extension to help you convert your code to AI prompts",
+  "version": "0.0.7",
   "icon": "assets/logo.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/aatitkarki/code-to-prompt.git"
   },
   "engines": {
-    "vscode": "^1.97.0"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView:fileExplorerView",
-    "onStartupFinished"
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "publisher": "aatitkarki",
   "author": {
@@ -34,37 +31,30 @@
   "contributes": {
     "commands": [
       {
-        "command": "fileExplorer.openWebview",
-        "title": "Open File Explorer",
-        "category": "Code To Prompt",
-        "icon": "assets/logo.png"
+        "command": "code-prompt.updateSeparator",
+        "title": "Update Separator"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "fileExplorer",
+          "id": "code-prompt-explorer",
           "title": "Code To Prompt Explorer",
           "icon": "assets/logo.png"
         }
       ]
     },
     "views": {
-      "fileExplorer": [
+      "code-prompt-explorer": [
         {
           "type": "webview",
-          "id": "fileExplorerView",
-          "name": "Files and Folders",
-          "visibility": "visible"
-        }
-      ]
-    },
-    "menus": {
-      "view/title": [
+          "id": "code-prompt-directory",
+          "name": "Directory List"
+        },
         {
-          "command": "fileExplorer.openWebview",
-          "when": "view == fileExplorerView",
-          "group": "navigation"
+          "type": "webview",
+          "id": "code-prompt-selected-files",
+          "name": "Selected Files"
         }
       ]
     }
@@ -77,23 +67,28 @@
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src",
-    "test": "vscode-test"
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.97.0",
-    "@typescript-eslint/eslint-plugin": "^8.22.0",
-    "@typescript-eslint/parser": "^8.22.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
+    "@eslint/config-array": "^0.19.2",
+    "@eslint/object-schema": "^2.1.6",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "@vscode/test-electron": "^2.3.4",
     "copy-webpack-plugin": "^12.0.2",
-    "eslint": "^9.19.0",
-    "ts-loader": "^9.5.2",
-    "typescript": "^5.7.3",
-    "webpack": "^5.97.1",
-    "webpack-cli": "^6.0.1"
+    "eslint": "^8.45.0",
+    "glob": "^11.0.1",
+    "mocha": "^10.2.0",
+    "path-browserify": "^1.0.1",
+    "rimraf": "^6.0.1",
+    "ts-loader": "^9.4.3",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "tiktoken": "^1.0.20"

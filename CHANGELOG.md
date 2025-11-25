@@ -25,7 +25,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Updated repository URL in documentation to the correct project repository
 
-## [0.0.2] - 2024-03-19
+## [0.0.2] - 2025-02-11
 
 ### Fixed
 
