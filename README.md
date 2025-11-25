@@ -14,7 +14,7 @@ Transform your project into clean, structured prompts for ChatGPT, Claude, Copil
 
 <p align="center">
   <!-- Short looping GIF showing: select files → open dashboard → copy -->
-  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/dashboard.png" width="720" alt="Code to Prompt overview" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/overview.gif" width="720" alt="Code to Prompt overview" />
 </p>
 
 ## ✨ What it does
@@ -91,7 +91,7 @@ You can switch format any time in the **Settings** view.
 ## 🧱 Dashboard view
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/overview.gif" width="720" alt="Code to Prompt – Dashboard view" />
+  <img src="https://raw.githubusercontent.com/aatitkarki/code-to-prompt/main/media/dashboard.png" width="720" alt="Code to Prompt – Dashboard view" />
 </p>
 
 Open the **Dashboard** via:
