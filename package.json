@@ -29,9 +29,11 @@
     "onCommand:codeToPrompt.copyPrompt",
     "onCommand:codeToPrompt.openDashboard",
     "onCommand:codeToPrompt.selectOpenEditors",
+    "onCommand:codeToPrompt.selectGitChanges",
     "onCommand:codeToPrompt.resetSelection",
     "onCommand:codeToPrompt.reloadFiles",
-    "onCommand:codeToPrompt.importFromClipboard"
+    "onCommand:codeToPrompt.importFromClipboard",
+    "onCommand:codeToPrompt.searchFiles"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -78,6 +80,11 @@
         "title": "Code to Prompt: Select Open Editors"
       },
       {
+        "command": "codeToPrompt.selectGitChanges",
+        "title": "Code to Prompt: Select Git Changes",
+        "icon": "$(git-compare)"
+      },
+      {
         "command": "codeToPrompt.resetSelection",
         "title": "Code to Prompt: Reset Selection",
         "icon": "$(clear-all)"
@@ -91,6 +98,11 @@
         "command": "codeToPrompt.importFromClipboard",
         "title": "Code to Prompt: Import Prompt from Clipboard",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "codeToPrompt.searchFiles",
+        "title": "Code to Prompt: Search Files",
+        "icon": "$(search)"
       }
     ],
     "menus": {
@@ -119,6 +131,16 @@
           "command": "codeToPrompt.resetSelection",
           "when": "view == codeToPromptExplorer",
           "group": "navigation@4"
+        },
+        {
+          "command": "codeToPrompt.searchFiles",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@5"
+        },
+        {
+          "command": "codeToPrompt.selectGitChanges",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@6"
         }
       ]
     },
