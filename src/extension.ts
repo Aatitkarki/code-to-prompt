@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { CodeToPromptTreeProvider, FileNode } from "./fileSystem";
 import { formatPrompt, OutputFormat, FileContent } from "./formatter";
 import { countTokens } from "./tokenCounter";
@@ -10,6 +12,7 @@ import { parsePromptTextToFilesAuto } from "./importParser";
 
 const STANDARD_FOOTER_NOTE =
   "Always output in same format as provided. Only provide new or files that requires update";
+const execFileAsync = promisify(execFile);
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -76,6 +79,29 @@ export async function activate(
         treeProvider.setSelectedUris(uris);
         vscode.window.showInformationMessage(
           `Code to Prompt: Selected ${uris.length} open editor(s).`
+        );
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "codeToPrompt.selectGitChanges",
+      async () => {
+        const changedPaths = await getGitChangedFilePaths(rootUri);
+
+        if (!changedPaths.length) {
+          vscode.window.showInformationMessage(
+            "Code to Prompt: No git changed files found."
+          );
+          return;
+        }
+
+        treeProvider.setSelectedPaths(changedPaths);
+        vscode.window.showInformationMessage(
+          `Code to Prompt: Selected ${changedPaths.length} git changed file${
+            changedPaths.length === 1 ? "" : "s"
+          }.`
         );
       }
     )
@@ -162,6 +188,12 @@ export async function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand("codeToPrompt.openDashboard", () => {
       DashboardPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("codeToPrompt.searchFiles", async () => {
+      await searchAndSelectFiles(treeProvider);
     })
   );
 
@@ -373,6 +405,171 @@ export async function activate(
       treeProvider.clearSelection();
     },
   });
+}
+
+async function searchAndSelectFiles(
+  treeProvider: CodeToPromptTreeProvider
+): Promise<void> {
+  // Get all available files from the tree
+  const allFiles = await getAllFilePaths(treeProvider);
+
+  if (allFiles.length === 0) {
+    vscode.window.showInformationMessage("Code to Prompt: No files available to search.");
+    return;
+  }
+
+  // Create QuickPick for file search
+  const quickPick = vscode.window.createQuickPick();
+  quickPick.placeholder = "Search for files to select...";
+  quickPick.canSelectMany = true;
+  quickPick.matchOnDescription = true;
+  quickPick.matchOnDetail = true;
+
+  // Set initial items
+  const items = allFiles.map(filePath => ({
+    label: path.basename(filePath),
+    description: path.dirname(filePath),
+    detail: filePath,
+    picked: treeProvider.getSelectedPaths().includes(filePath)
+  }));
+
+  quickPick.items = items;
+
+  // Handle search input changes
+  quickPick.onDidChangeValue(value => {
+    if (!value.trim()) {
+      quickPick.items = items;
+      return;
+    }
+
+    const filteredItems = items.filter(item => {
+      const searchTerm = value.toLowerCase();
+      const fileName = item.label.toLowerCase();
+      const fullPath = item.detail.toLowerCase();
+
+      return fileName.includes(searchTerm) || fullPath.includes(searchTerm);
+    });
+
+    quickPick.items = filteredItems;
+  });
+
+  // Handle selection
+  quickPick.onDidAccept(() => {
+    const selectedItems = quickPick.selectedItems;
+    const selectedPaths = selectedItems
+      .map(item => item.detail)
+      .filter((detail): detail is string => detail !== undefined);
+
+    // Update selection
+    treeProvider.setSelectedPaths(selectedPaths);
+
+    const count = selectedPaths.length;
+    vscode.window.showInformationMessage(
+      `Code to Prompt: Selected ${count} file${count === 1 ? '' : 's'} from search.`
+    );
+
+    quickPick.hide();
+  });
+
+  quickPick.onDidHide(() => {
+    quickPick.dispose();
+  });
+
+  quickPick.show();
+}
+
+async function getAllFilePaths(
+  treeProvider: CodeToPromptTreeProvider
+): Promise<string[]> {
+  const allFiles: string[] = [];
+
+  // We need to traverse the internal tree structure
+  // Since we don't have direct access to the internal tree, we'll use the tree data provider methods
+  const rootItems = await treeProvider.getChildren();
+
+  const collectFiles = async (items: FileNode[]): Promise<void> => {
+    for (const item of items) {
+      if (item.isFile) {
+        allFiles.push(item.relativePath);
+      } else {
+        // Get children of this folder
+        const children = await treeProvider.getChildren(item);
+        await collectFiles(children);
+      }
+    }
+  };
+
+  await collectFiles(rootItems);
+  return allFiles;
+}
+
+async function getGitChangedFilePaths(rootUri: vscode.Uri): Promise<string[]> {
+  let stdout: string;
+  try {
+    const result = await execFileAsync(
+      "git",
+      ["status", "--porcelain=v1", "-z"],
+      {
+        cwd: rootUri.fsPath,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024 * 10,
+      }
+    );
+    stdout = result.stdout;
+  } catch (err) {
+    vscode.window.showWarningMessage(
+      "Code to Prompt: Could not read git changes for this workspace."
+    );
+    console.error("Code to Prompt: failed to read git status", err);
+    return [];
+  }
+
+  const paths = parseGitStatusPaths(stdout);
+  const existingFiles: string[] = [];
+
+  for (const relPath of paths) {
+    const uri = vscode.Uri.joinPath(rootUri, relPath);
+    try {
+      const stat = await vscode.workspace.fs.stat(uri);
+      if (stat.type === vscode.FileType.File) {
+        existingFiles.push(relPath);
+      }
+    } catch {
+      // Deleted or otherwise unavailable files cannot be selected for prompts.
+    }
+  }
+
+  return existingFiles;
+}
+
+function parseGitStatusPaths(statusOutput: string): string[] {
+  const entries = statusOutput.split("\0").filter(Boolean);
+  const paths: string[] = [];
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (entry.length < 4) {
+      continue;
+    }
+
+    const indexStatus = entry[0];
+    const worktreeStatus = entry[1];
+    const statusPath = entry.slice(3);
+
+    if (indexStatus === "R" || indexStatus === "C") {
+      paths.push(statusPath);
+      i++;
+      continue;
+    }
+
+    if (indexStatus === "D" || worktreeStatus === "D") {
+      continue;
+    }
+
+    paths.push(statusPath);
+  }
+
+  return [...new Set(paths)];
 }
 
 export function deactivate(): void {
