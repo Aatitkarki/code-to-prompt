@@ -43,6 +43,8 @@ All processing happens locally in VS Code. Nothing is sent anywhere by this exte
 - Folder clicks select/unselect all eligible files inside
 - **Select Open Editors** command to grab all visible editors
 - **Select Git Changes** command to grab all currently changed Git files
+- **Select Branch Changes** command to grab files changed on the current branch
+- **Select Commit Changes** command to pick commits and select their changed files
 - **Title bar actions:**
   - ▶️ **Open Dashboard**
   - 🔄 **Reload Files**
@@ -207,6 +209,7 @@ This gives you a safety net against accidental massive refactors.
    - Click to toggle files/folders
    - Use **Select Open Editors** to add all currently visible files
    - Use **Select Git Changes** to add files currently changed in Git
+   - Use **Select Branch Changes** or **Select Commit Changes** for branch/commit scoped selections
    - Use **Reset** to clear selection
 
 3. **Generate a prompt**
