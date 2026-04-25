@@ -30,6 +30,8 @@
     "onCommand:codeToPrompt.openDashboard",
     "onCommand:codeToPrompt.selectOpenEditors",
     "onCommand:codeToPrompt.selectGitChanges",
+    "onCommand:codeToPrompt.selectBranchChanges",
+    "onCommand:codeToPrompt.selectCommitChanges",
     "onCommand:codeToPrompt.resetSelection",
     "onCommand:codeToPrompt.reloadFiles",
     "onCommand:codeToPrompt.importFromClipboard",
@@ -83,6 +85,16 @@
         "command": "codeToPrompt.selectGitChanges",
         "title": "Code to Prompt: Select Git Changes",
         "icon": "$(git-compare)"
+      },
+      {
+        "command": "codeToPrompt.selectBranchChanges",
+        "title": "Code to Prompt: Select Branch Changes",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "codeToPrompt.selectCommitChanges",
+        "title": "Code to Prompt: Select Commit Changes",
+        "icon": "$(git-commit)"
       },
       {
         "command": "codeToPrompt.resetSelection",
@@ -141,6 +153,16 @@
           "command": "codeToPrompt.selectGitChanges",
           "when": "view == codeToPromptExplorer",
           "group": "navigation@6"
+        },
+        {
+          "command": "codeToPrompt.selectBranchChanges",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@7"
+        },
+        {
+          "command": "codeToPrompt.selectCommitChanges",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@8"
         }
       ]
     },
