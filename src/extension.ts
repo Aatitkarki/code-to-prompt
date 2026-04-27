@@ -3,7 +3,7 @@ import * as path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { CodeToPromptTreeProvider, FileNode } from "./fileSystem";
-import { formatPrompt, OutputFormat, FileContent } from "./formatter";
+import { formatPrompt, formatCommitPrompt, OutputFormat, FileContent, CommitFileContent, CommitInfo } from "./formatter";
 import { countTokens } from "./tokenCounter";
 import { DashboardPanel } from "./dashboardPanel";
 import { SettingsViewProvider } from "./settingsView";
@@ -13,6 +13,9 @@ import { parsePromptTextToFilesAuto } from "./importParser";
 const STANDARD_FOOTER_NOTE =
   "Always output in same format as provided. Only provide new or files that requires update";
 const execFileAsync = promisify(execFile);
+
+// Store commit selection context for copyCommitPrompt
+let lastCommitSelection: { hashes: string[]; commits: CommitInfo[] } | null = null;
 
 interface GitCommitPickItem extends vscode.QuickPickItem {
   hash: string;
@@ -190,13 +193,25 @@ export async function activate(
           return;
         }
 
+        // Store commit info for use by copyCommitPrompt
+        lastCommitSelection = {
+          hashes: selectedHashes,
+          commits: selectedCommits.map((item) => ({
+            hash: item.hash,
+            shortHash: item.hash.substring(0, 7),
+            subject: item.label?.replace(/^[a-f0-9]+\s+/, "") || "(no subject)",
+            author: item.detail?.replace(/^by\s+/, "") || "unknown",
+            relativeDate: item.description || "",
+          })),
+        };
+
         treeProvider.setSelectedPaths(changedPaths);
         vscode.window.showInformationMessage(
           `Code to Prompt: Selected ${changedPaths.length} file${
             changedPaths.length === 1 ? "" : "s"
           } from ${selectedHashes.length} commit${
             selectedHashes.length === 1 ? "" : "s"
-          }.`
+          }. Use "Copy Commit Changes" to include commit messages.`
         );
       }
     )
@@ -278,6 +293,111 @@ export async function activate(
         vscode.window.showInformationMessage(msg);
       }
     })
+  );
+
+  // Copy Commit Changes — fetches file content at each commit and includes commit messages
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "codeToPrompt.copyCommitPrompt",
+      async () => {
+        if (!lastCommitSelection) {
+          vscode.window.showWarningMessage(
+            "Code to Prompt: No commit changes selected. Use 'Select Commit Changes' first."
+          );
+          return;
+        }
+
+        const entries = treeProvider.getSelectedFileEntries();
+        if (!entries.length) {
+          vscode.window.showWarningMessage(
+            "Code to Prompt: No files selected. Use the Files view or commit selection to pick files."
+          );
+          return;
+        }
+
+        const config = vscode.workspace.getConfiguration("codeToPrompt");
+        const format =
+          (config.get<OutputFormat>("defaultFormat", "markdown") as OutputFormat) || "markdown";
+        const includeLineNumbers = config.get<boolean>("includeLineNumbers", false);
+        const headerPrompt = config.get<string>("headerPrompt", "") || "";
+        const baseFooterPrompt = config.get<string>("footerPrompt", "") || "";
+        const appendStandardFooterNote = config.get<boolean>("appendStandardFooterNote", true);
+        const tokenBudget = config.get<number>("tokenBudget", 32000);
+
+        const footerPrompt = buildFooterPrompt(baseFooterPrompt, appendStandardFooterNote);
+
+        // Build commit-to-hash map for quick lookup
+        const commitMap = new Map<string, CommitInfo>();
+        for (const c of lastCommitSelection.commits) {
+          commitMap.set(c.hash, c);
+        }
+
+        // Build a file-to-commit mapping by diffing per commit
+        const fileCommitMap = new Map<string, string>();
+        for (const hash of lastCommitSelection.hashes) {
+          const commitFiles = await getGitChangedFilePathsForCommits(rootUri, [hash]);
+          for (const f of commitFiles) {
+            fileCommitMap.set(f, hash);
+          }
+        }
+
+        // Fetch actual file content at each commit using git show
+        const commitFiles: CommitFileContent[] = [];
+        for (const entry of entries) {
+          const relPath = entry.relativePath;
+          const commitHash = fileCommitMap.get(relPath);
+          if (!commitHash) continue;
+
+          const commitInfo = commitMap.get(commitHash);
+          if (!commitInfo) continue;
+
+          try {
+            const result = await execFileAsync(
+              "git",
+              ["show", `${commitHash}:${relPath}`],
+              { cwd: rootUri.fsPath, encoding: "utf8", maxBuffer: 1024 * 1024 * 10 }
+            );
+            commitFiles.push({
+              path: relPath,
+              content: result.stdout,
+              commit: commitInfo,
+            });
+          } catch (err) {
+            console.error(
+              `Code to Prompt: failed to git show ${commitHash}:${relPath}`,
+              err
+            );
+          }
+        }
+
+        if (!commitFiles.length) {
+          vscode.window.showWarningMessage(
+            "Code to Prompt: Could not retrieve file contents from selected commits."
+          );
+          return;
+        }
+
+        const prompt = formatCommitPrompt(
+          commitFiles,
+          format,
+          includeLineNumbers,
+          headerPrompt,
+          footerPrompt
+        );
+        const tokenInfo = await countTokens(prompt);
+
+        await vscode.env.clipboard.writeText(prompt);
+
+        const msg = `Code to Prompt: Copied commit changes to clipboard. ${commitFiles.length} files from ${lastCommitSelection.hashes.length} commits. Tokens: ${tokenInfo.tokens}`;
+        if (tokenInfo.tokens > tokenBudget) {
+          vscode.window.showWarningMessage(
+            `${msg} (above your configured budget of ${tokenBudget} tokens).`
+          );
+        } else {
+          vscode.window.showInformationMessage(msg);
+        }
+      }
+    )
   );
 
   context.subscriptions.push(
@@ -664,7 +784,7 @@ function parseGitStatusPaths(statusOutput: string): string[] {
     paths.push(statusPath);
   }
 
-  return [...new Set(paths)];
+  return Array.from(new Set(paths));
 }
 
 async function getDefaultBaseRef(rootUri: vscode.Uri): Promise<string | null> {
@@ -686,7 +806,7 @@ async function getDefaultBaseRef(rootUri: vscode.Uri): Promise<string | null> {
 
   candidates.push("origin/main", "origin/master", "main", "master");
 
-  for (const candidate of [...new Set(candidates)]) {
+  for (const candidate of Array.from(new Set(candidates))) {
     try {
       await execFileAsync("git", ["rev-parse", "--verify", candidate], {
         cwd: rootUri.fsPath,
@@ -829,7 +949,7 @@ function parseGitNameStatusPaths(statusOutput: string): string[] {
     i++;
   }
 
-  return [...new Set(paths)];
+  return Array.from(new Set(paths));
 }
 
 async function filterExistingFilePaths(
@@ -838,7 +958,7 @@ async function filterExistingFilePaths(
 ): Promise<string[]> {
   const existingFiles: string[] = [];
 
-  for (const relPath of [...new Set(paths)]) {
+  for (const relPath of Array.from(new Set(paths))) {
     const uri = vscode.Uri.joinPath(rootUri, relPath);
     try {
       const stat = await vscode.workspace.fs.stat(uri);

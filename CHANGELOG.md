@@ -4,6 +4,14 @@ All notable changes to the "code-to-prompt" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.1.0] - 2026-04-25
+
+### Added
+
+- **Copy Commit Changes** — new feature that fetches exact file contents from git commits and includes commit messages in the generated prompt
+- New `Copy Commit Changes` button in the Files view toolbar (commit icon)
+- Commit header metadata (hash, subject, author, date) is now included in the output when using commit changes
+
 ## [1.0.0] - 2025-11-26
 
 ### Added

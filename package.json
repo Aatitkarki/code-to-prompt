@@ -2,7 +2,7 @@
   "name": "code-to-prompt",
   "displayName": "Code To Prompt",
   "description": "Transform your code into AI-ready prompts! Easily convert your codebase into structured prompts for Large Language Models (LLMs).",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "icon": "assets/icon.png",
   "publisher": "aatitkarki",
   "engines": {
@@ -35,7 +35,8 @@
     "onCommand:codeToPrompt.resetSelection",
     "onCommand:codeToPrompt.reloadFiles",
     "onCommand:codeToPrompt.importFromClipboard",
-    "onCommand:codeToPrompt.searchFiles"
+    "onCommand:codeToPrompt.searchFiles",
+    "onCommand:codeToPrompt.copyCommitPrompt"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -115,6 +116,11 @@
         "command": "codeToPrompt.searchFiles",
         "title": "Code to Prompt: Search Files",
         "icon": "$(search)"
+      },
+      {
+        "command": "codeToPrompt.copyCommitPrompt",
+        "title": "Code to Prompt: Copy Commit Changes (with commit messages)",
+        "icon": "$(git-commit)"
       }
     ],
     "menus": {
@@ -163,6 +169,11 @@
           "command": "codeToPrompt.selectCommitChanges",
           "when": "view == codeToPromptExplorer",
           "group": "navigation@8"
+        },
+        {
+          "command": "codeToPrompt.copyCommitPrompt",
+          "when": "view == codeToPromptExplorer",
+          "group": "navigation@9"
         }
       ]
     },
