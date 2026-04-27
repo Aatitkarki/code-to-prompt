@@ -5,6 +5,18 @@ export interface FileContent {
   content: string;
 }
 
+export interface CommitInfo {
+  hash: string;
+  shortHash: string;
+  subject: string;
+  author: string;
+  relativeDate: string;
+}
+
+export interface CommitFileContent extends FileContent {
+  commit: CommitInfo;
+}
+
 export function formatPrompt(
   files: FileContent[],
   format: OutputFormat,
@@ -37,6 +49,62 @@ export function formatPrompt(
   }
 
   return header + body + footer;
+}
+
+export function formatCommitPrompt(
+  files: CommitFileContent[],
+  format: OutputFormat,
+  includeLineNumbers: boolean,
+  headerPrompt: string,
+  footerPrompt: string
+): string {
+  const header =
+    headerPrompt && headerPrompt.trim().length > 0
+      ? headerPrompt.trim() + "\n\n"
+      : "";
+  const footer =
+    footerPrompt && footerPrompt.trim().length > 0
+      ? "\n\n" + footerPrompt.trim()
+      : "";
+
+  const commitBlocks: string[] = [];
+
+  // Group files by commit
+  const commitMap = new Map<string, CommitFileContent[]>();
+  for (const file of files) {
+    const key = file.commit.hash;
+    if (!commitMap.has(key)) {
+      commitMap.set(key, []);
+    }
+    commitMap.get(key)!.push(file);
+  }
+
+  for (const entry of Array.from(commitMap.entries())) {
+    const hash = entry[0];
+    const groupFiles = entry[1];
+    const commitInfo = groupFiles[0].commit;
+    commitBlocks.push(
+      `Commit: ${commitInfo.shortHash} - ${commitInfo.subject}`,
+      `Author: ${commitInfo.author}`,
+      `Date: ${commitInfo.relativeDate}`,
+      ``
+    );
+
+    switch (format) {
+      case "xml":
+        commitBlocks.push(formatXml(groupFiles, includeLineNumbers));
+        break;
+      case "json":
+        commitBlocks.push(formatJson(groupFiles, includeLineNumbers, false));
+        break;
+      case "markdown":
+      default:
+        commitBlocks.push(formatMarkdown(groupFiles, includeLineNumbers, false));
+        break;
+    }
+  }
+
+  return header + commitBlocks.join("\n") + footer;
 }
 
 function addLineNumbers(content: string): string {
