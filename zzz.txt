@@ -1,0 +1,11 @@
+Ingest the extension code:
+Commit: 7a5375b - feat: add Copy Commit Changes feature v1.1.0
+Author: aatitkarki
+Date: 3 hours ago
+Timestamp: 2026-04-27T10:18:57+03:00
+
+
+Commit: 42287b9 - perfectly working code
+Author: sureshkarki
+Date: 53 minutes ago
+Timestamp: 2026-04-27T12:16:14+03:00

@@ -14,7 +14,7 @@ interface InternalNode {
   children?: InternalNode[];
 }
 
-const BINARY_EXTENSIONS = [
+const BINARY_EXTENSIONS = new Set([
   ".png",
   ".jpg",
   ".jpeg",
@@ -28,11 +28,10 @@ const BINARY_EXTENSIONS = [
   ".lock",
   ".exe",
   ".dll",
-];
+]);
 
 export class CodeToPromptTreeProvider
-  implements vscode.TreeDataProvider<FileNode>
-{
+  implements vscode.TreeDataProvider<FileNode> {
   private _onDidChangeTreeData = new vscode.EventEmitter<
     FileNode | undefined | void
   >();
@@ -107,16 +106,14 @@ export class CodeToPromptTreeProvider
     }
 
     const parentNode = element
-      ? await this.findInternalNode(this.tree, element.resourceUri)
+      ? this.findInternalNode(this.tree, element.resourceUri)
       : this.tree;
 
     if (!parentNode || !parentNode.children) {
       return [];
     }
 
-    const children = parentNode.children;
-
-    return children
+    return parentNode.children
       .map((child) => {
         const relPath =
           path.relative(this.root.fsPath, child.uri.fsPath) || ".";
@@ -139,8 +136,8 @@ export class CodeToPromptTreeProvider
         item.description = child.isFile
           ? undefined
           : relPath === "."
-          ? undefined
-          : relPath;
+            ? undefined
+            : relPath;
         item.contextValue = child.isFile ? "file" : "folder";
         item.tooltip = relPath;
         item.iconPath = child.isFile
@@ -161,9 +158,7 @@ export class CodeToPromptTreeProvider
         if (aIsFile !== bIsFile) {
           return aIsFile ? 1 : -1; // folders first
         }
-        return (a.label || "")
-          .toString()
-          .localeCompare((b.label || "").toString());
+        return (a.label || "").toString().localeCompare((b.label || "").toString());
       });
   }
 
@@ -331,15 +326,15 @@ export class CodeToPromptTreeProvider
     return node;
   }
 
-  private async findInternalNode(
+  private findInternalNode(
     node: InternalNode,
     uri: vscode.Uri
-  ): Promise<InternalNode | undefined> {
+  ): InternalNode | undefined {
     if (node.uri.toString() === uri.toString()) {
       return node;
     }
     for (const child of node.children || []) {
-      const found = await this.findInternalNode(child, uri);
+      const found = this.findInternalNode(child, uri);
       if (found) return found;
     }
     return undefined;
@@ -364,6 +359,6 @@ export class CodeToPromptTreeProvider
 
   private isBinary(relPath: string): boolean {
     const ext = path.extname(relPath).toLowerCase();
-    return BINARY_EXTENSIONS.includes(ext);
+    return BINARY_EXTENSIONS.has(ext);
   }
 }
